@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Snapdi.Repositories.Data;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 
@@ -6,7 +7,7 @@ namespace Snapdi.Repositories.Repositories
 {
     public class UserRepository : BaseRepository<User>, IUserRepository
     {
-        public UserRepository(Snapdi_DB_v1_Context context) : base(context)
+        public UserRepository(SnapdiDbV3Context context) : base(context)
         {
         }
 
@@ -31,14 +32,14 @@ namespace Snapdi.Repositories.Repositories
         public async Task<User?> GetByRefreshTokenAsync(string refreshToken)
         {
             return await _dbSet
-                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken && 
+                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken &&
                                          u.ExpiredRefreshTokenAt > DateTime.UtcNow);
         }
 
         public async Task<User?> GetByEmailVerificationTokenAsync(string verificationToken)
         {
             return await _dbSet
-                .FirstOrDefaultAsync(u => u.RefreshToken == verificationToken && 
+                .FirstOrDefaultAsync(u => u.RefreshToken == verificationToken &&
                                          u.ExpiredRefreshTokenAt > DateTime.UtcNow);
         }
 

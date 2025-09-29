@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Snapdi.Repositories.Data;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using System.Linq.Expressions;
@@ -7,10 +8,10 @@ namespace Snapdi.Repositories.Repositories
 {
     public class BaseRepository<T> : IBaseRepository<T> where T : class
     {
-        protected readonly Snapdi_DB_v1_Context _context;
+        protected readonly SnapdiDbV3Context _context;
         protected readonly DbSet<T> _dbSet;
 
-        public BaseRepository(Snapdi_DB_v1_Context context)
+        public BaseRepository(SnapdiDbV3Context context)
         {
             _context = context;
             _dbSet = context.Set<T>();

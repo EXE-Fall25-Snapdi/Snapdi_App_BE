@@ -184,7 +184,7 @@ namespace Snapdi.Services.Services
         {
             // Try to find user by email or phone
             var user = await _userRepository.GetByEmailOrPhoneAsync(emailOrPhone);
-            
+
             if (user == null || !VerifyPassword(password, user.Password))
                 return null;
 

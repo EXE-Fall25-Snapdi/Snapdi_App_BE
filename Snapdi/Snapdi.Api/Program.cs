@@ -2,12 +2,13 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Snapdi.Repositories.Models;
+using Snapdi.Repositories.Data;
 using Snapdi.Repositories.Interfaces;
+using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
 using Snapdi.Services.Interfaces;
-using Snapdi.Services.Services;
 using Snapdi.Services.Models;
+using Snapdi.Services.Services;
 using System;
 using System.Text;
 
@@ -60,7 +61,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 // Add DbContext
-builder.Services.AddDbContext<Snapdi_DB_v1_Context>(options =>
+builder.Services.AddDbContext<SnapdiDbV3Context>(options =>
     options.UseSqlServer(connectionString));
 
 // Add configuration for app settings
@@ -83,7 +84,7 @@ builder.Services.Configure<EmailSettings>(options =>
 // Register repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// Register services
+//// Register services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
