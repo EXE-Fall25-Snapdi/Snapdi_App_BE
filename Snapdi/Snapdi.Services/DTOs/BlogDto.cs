@@ -31,6 +31,8 @@ namespace Snapdi.Services.DTOs
 
         public int? AuthorId { get; set; }
 
+        public bool IsActive { get; set; } = true;
+
         public List<string> KeywordNames { get; set; } = new List<string>();
         public List<int> KeywordIds { get; set; } = new List<int>();
     }
