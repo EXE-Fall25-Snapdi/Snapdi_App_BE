@@ -14,4 +14,12 @@ namespace Snapdi.Services.Models
         public string FromEmail { get; set; } = string.Empty;
         public string FromName { get; set; } = string.Empty;
     }
+
+    public class JwtSettings
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Issuer { get; set; } = string.Empty;
+        public string Audience { get; set; } = string.Empty;
+        public int ExpirationHours { get; set; } = 1;
+    }
 }

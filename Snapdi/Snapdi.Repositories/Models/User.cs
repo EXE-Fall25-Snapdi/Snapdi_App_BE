@@ -67,7 +67,7 @@ public partial class User
     public virtual ICollection<Message> Messages { get; set; } = new List<Message>();
 
     [InverseProperty("User")]
-    public virtual ICollection<PhotoEquipment> PhotoEquipments { get; set; } = new List<PhotoEquipment>();
+    public virtual ICollection<PhotoPortfolio> PhotoPortfolios { get; set; } = new List<PhotoPortfolio>();
 
     [InverseProperty("User")]
     public virtual PhotographerProfile? PhotographerProfile { get; set; }

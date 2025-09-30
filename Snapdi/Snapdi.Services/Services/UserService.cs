@@ -281,27 +281,29 @@ namespace Snapdi.Services.Services
                 AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl
             };
 
+            // Map photographer profile
             if (user.PhotographerProfile != null)
             {
                 userDto.PhotographerProfile = new PhotographerProfileDto
                 {
                     UserId = user.PhotographerProfile.UserId,
-                    EquipmentId = user.PhotographerProfile.EquipmentId,
+                    EquipmentDescription = user.PhotographerProfile.EquipmentDescription,
+                    YearsOfExperience = user.PhotographerProfile.YearsOfExperience,
                     AvgRating = user.PhotographerProfile.AvgRating,
                     IsAvailable = user.PhotographerProfile.IsAvailable,
-                    Description = user.PhotographerProfile.Description,
-                    PhotoPortfolioId = user.PhotographerProfile.PhotoPortfolioId,
-                    Equipment = user.PhotographerProfile.Equipment != null ? new PhotoEquipmentDto
-                    {
-                        EquipmentId = user.PhotographerProfile.Equipment.EquipmentId,
-                        Name = user.PhotographerProfile.Equipment.Name
-                    } : null,
-                    PhotoPortfolio = user.PhotographerProfile.PhotoPortfolio != null ? new PhotoPortfolioDto
-                    {
-                        PhotoPortfolioId = user.PhotographerProfile.PhotoPortfolio.PhotoPortfolioId,
-                        PhotoUrl = user.PhotographerProfile.PhotoPortfolio.PhotoUrl
-                    } : null
+                    Description = user.PhotographerProfile.Description
                 };
+            }
+
+            // Map photo portfolios
+            if (user.PhotoPortfolios?.Any() == true)
+            {
+                userDto.PhotoPortfolios = user.PhotoPortfolios.Select(p => new PhotoPortfolioDto
+                {
+                    PhotoPortfolioId = p.PhotoPortfolioId,
+                    UserId = p.UserId,
+                    PhotoUrl = p.PhotoUrl
+                }).ToList();
             }
 
             return userDto;

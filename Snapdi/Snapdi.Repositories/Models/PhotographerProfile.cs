@@ -13,10 +13,11 @@ public partial class PhotographerProfile
     [Column("UserID")]
     public int UserId { get; set; }
 
-    [Column("EquipmentID")]
-    public int? EquipmentId { get; set; }
+    [StringLength(500)]
+    public string? EquipmentDescription { get; set; }
 
-    public int? YearsOfExperience { get; set; }
+    [StringLength(100)]
+    public string? YearsOfExperience { get; set; }
 
     public double? AvgRating { get; set; }
 
@@ -24,17 +25,6 @@ public partial class PhotographerProfile
 
     [StringLength(500)]
     public string? Description { get; set; }
-
-    [Column("PhotoPortfolioID")]
-    public int? PhotoPortfolioId { get; set; }
-
-    [ForeignKey("EquipmentId")]
-    [InverseProperty("PhotographerProfiles")]
-    public virtual PhotoEquipment? Equipment { get; set; }
-
-    [ForeignKey("PhotoPortfolioId")]
-    [InverseProperty("PhotographerProfiles")]
-    public virtual PhotoPortfolio? PhotoPortfolio { get; set; }
 
     [ForeignKey("UserId")]
     [InverseProperty("PhotographerProfile")]

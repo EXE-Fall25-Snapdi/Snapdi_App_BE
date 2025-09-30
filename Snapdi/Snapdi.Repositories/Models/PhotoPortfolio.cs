@@ -13,9 +13,13 @@ public partial class PhotoPortfolio
     [Column("PhotoPortfolioID")]
     public int PhotoPortfolioId { get; set; }
 
+    [Column("UserID")]
+    public int UserId { get; set; }
+
     [StringLength(500)]
     public string PhotoUrl { get; set; } = null!;
 
-    [InverseProperty("PhotoPortfolio")]
-    public virtual ICollection<PhotographerProfile> PhotographerProfiles { get; set; } = new List<PhotographerProfile>();
+    [ForeignKey("UserId")]
+    [InverseProperty("PhotoPortfolios")]
+    public virtual User User { get; set; } = null!;
 }

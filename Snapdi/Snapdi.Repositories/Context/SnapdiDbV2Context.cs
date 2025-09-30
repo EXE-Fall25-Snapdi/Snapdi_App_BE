@@ -36,8 +36,6 @@ public partial class SnapdiDbV2Context : DbContext
 
     public virtual DbSet<PaymentStatus> PaymentStatuses { get; set; }
 
-    public virtual DbSet<PhotoEquipment> PhotoEquipments { get; set; }
-
     public virtual DbSet<PhotoPortfolio> PhotoPortfolios { get; set; }
 
     public virtual DbSet<PhotographerProfile> PhotographerProfiles { get; set; }
@@ -154,18 +152,13 @@ public partial class SnapdiDbV2Context : DbContext
             entity.HasKey(e => e.PaymentStatusId).HasName("PK__PaymentS__34F8AC1F9AB83D1F");
         });
 
-        modelBuilder.Entity<PhotoEquipment>(entity =>
-        {
-            entity.HasKey(e => e.EquipmentId).HasName("PK__PhotoEqu__34474599B7D60346");
-
-            entity.HasOne(d => d.User).WithMany(p => p.PhotoEquipments)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK__PhotoEqui__UserI__45F365D3");
-        });
-
         modelBuilder.Entity<PhotoPortfolio>(entity =>
         {
             entity.HasKey(e => e.PhotoPortfolioId).HasName("PK__PhotoPor__75BE09A8AE74CC21");
+
+            entity.HasOne(d => d.User).WithMany(p => p.PhotoPortfolios)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__PhotoPort__UserI__PhotoPortfolio_User");
         });
 
         modelBuilder.Entity<PhotographerProfile>(entity =>
@@ -173,10 +166,6 @@ public partial class SnapdiDbV2Context : DbContext
             entity.HasKey(e => e.UserId).HasName("PK__Photogra__1788CCACD97935F9");
 
             entity.Property(e => e.UserId).ValueGeneratedNever();
-
-            entity.HasOne(d => d.Equipment).WithMany(p => p.PhotographerProfiles).HasConstraintName("FK__Photograp__Equip__4BAC3F29");
-
-            entity.HasOne(d => d.PhotoPortfolio).WithMany(p => p.PhotographerProfiles).HasConstraintName("FK__Photograp__Photo__4CA06362");
 
             entity.HasOne(d => d.User).WithOne(p => p.PhotographerProfile).HasConstraintName("FK__Photograp__UserI__4AB81AF0");
         });
