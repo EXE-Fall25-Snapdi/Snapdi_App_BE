@@ -2,7 +2,7 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Snapdi.Repositories.Data;
+using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
@@ -61,7 +61,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 // Add DbContext
-builder.Services.AddDbContext<SnapdiDbV3Context>(options =>
+builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
     options.UseSqlServer(connectionString));
 
 // Add configuration for app settings
@@ -83,10 +83,14 @@ builder.Services.Configure<EmailSettings>(options =>
 
 // Register repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IBlogRepository, BlogRepository>();
+builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 
 //// Register services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IBlogService, BlogService>();
+builder.Services.AddScoped<IKeywordService, KeywordService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
