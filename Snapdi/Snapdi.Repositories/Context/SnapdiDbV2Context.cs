@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Snapdi.Repositories.Models;
 
-namespace Snapdi.Repositories.Data;
+namespace Snapdi.Repositories.Context;
 
-public partial class SnapdiDbV3Context : DbContext
+public partial class SnapdiDbV2Context : DbContext
 {
-    public SnapdiDbV3Context()
+    public SnapdiDbV2Context()
     {
     }
 
-    public SnapdiDbV3Context(DbContextOptions<SnapdiDbV3Context> options)
+    public SnapdiDbV2Context(DbContextOptions<SnapdiDbV2Context> options)
         : base(options)
     {
     }
@@ -59,7 +59,7 @@ public partial class SnapdiDbV3Context : DbContext
     {
         modelBuilder.Entity<Blog>(entity =>
         {
-            entity.HasKey(e => e.BlogId).HasName("PK__Blog__54379E5086687BB1");
+            entity.HasKey(e => e.BlogId).HasName("PK__Blog__54379E506DDA2403");
 
             entity.HasOne(d => d.Author).WithMany(p => p.Blogs).HasConstraintName("FK__Blog__AuthorID__3F466844");
 
@@ -74,7 +74,7 @@ public partial class SnapdiDbV3Context : DbContext
                         .HasConstraintName("FK__KeywordsI__BlogI__4222D4EF"),
                     j =>
                     {
-                        j.HasKey("BlogId", "KeywordId").HasName("PK__Keywords__574B8D0C0093B39C");
+                        j.HasKey("BlogId", "KeywordId").HasName("PK__Keywords__574B8D0CE2A6215B");
                         j.ToTable("KeywordsInBlog");
                         j.IndexerProperty<int>("BlogId").HasColumnName("BlogID");
                         j.IndexerProperty<int>("KeywordId").HasColumnName("KeywordID");
@@ -83,7 +83,7 @@ public partial class SnapdiDbV3Context : DbContext
 
         modelBuilder.Entity<Booking>(entity =>
         {
-            entity.HasKey(e => e.BookingId).HasName("PK__Booking__73951ACD53A0989B");
+            entity.HasKey(e => e.BookingId).HasName("PK__Booking__73951ACDC273B8F2");
 
             entity.HasOne(d => d.Customer).WithMany(p => p.BookingCustomers).HasConstraintName("FK__Booking__Custome__534D60F1");
 
@@ -96,17 +96,17 @@ public partial class SnapdiDbV3Context : DbContext
 
         modelBuilder.Entity<BookingStatus>(entity =>
         {
-            entity.HasKey(e => e.StatusId).HasName("PK__BookingS__C8EE20432FFD6C42");
+            entity.HasKey(e => e.StatusId).HasName("PK__BookingS__C8EE20438C9AFA58");
         });
 
         modelBuilder.Entity<Conversation>(entity =>
         {
-            entity.HasKey(e => e.ConversationId).HasName("PK__Conversa__C050D897A5AC11B0");
+            entity.HasKey(e => e.ConversationId).HasName("PK__Conversa__C050D897EF513182");
         });
 
         modelBuilder.Entity<ConversationParticipant>(entity =>
         {
-            entity.HasKey(e => new { e.ConversationId, e.UserId }).HasName("PK__Conversa__1128545D6E30552E");
+            entity.HasKey(e => new { e.ConversationId, e.UserId }).HasName("PK__Conversa__1128545DD045149E");
 
             entity.HasOne(d => d.Conversation).WithMany(p => p.ConversationParticipants).HasConstraintName("FK__Conversat__Conve__6FE99F9F");
 
@@ -115,17 +115,17 @@ public partial class SnapdiDbV3Context : DbContext
 
         modelBuilder.Entity<FeePolicy>(entity =>
         {
-            entity.HasKey(e => e.FeePolicyId).HasName("PK__FeePolic__ADCA966A1E69E217");
+            entity.HasKey(e => e.FeePolicyId).HasName("PK__FeePolic__ADCA966AAC41B8C5");
         });
 
         modelBuilder.Entity<Keyword>(entity =>
         {
-            entity.HasKey(e => e.KeywordId).HasName("PK__Keyword__37C135C12FBD1B28");
+            entity.HasKey(e => e.KeywordId).HasName("PK__Keyword__37C135C1F834A132");
         });
 
         modelBuilder.Entity<Message>(entity =>
         {
-            entity.HasKey(e => e.MessageId).HasName("PK__Messages__C87C037CACACA2F9");
+            entity.HasKey(e => e.MessageId).HasName("PK__Messages__C87C037C0DF786B5");
 
             entity.HasOne(d => d.Conversation).WithMany(p => p.Messages)
                 .OnDelete(DeleteBehavior.Cascade)
@@ -138,7 +138,7 @@ public partial class SnapdiDbV3Context : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payment__9B556A580CB8CF24");
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payment__9B556A5840ED1111");
 
             entity.HasOne(d => d.Booking).WithMany(p => p.Payments)
                 .OnDelete(DeleteBehavior.Cascade)
@@ -151,12 +151,12 @@ public partial class SnapdiDbV3Context : DbContext
 
         modelBuilder.Entity<PaymentStatus>(entity =>
         {
-            entity.HasKey(e => e.PaymentStatusId).HasName("PK__PaymentS__34F8AC1FDCDB687D");
+            entity.HasKey(e => e.PaymentStatusId).HasName("PK__PaymentS__34F8AC1F9AB83D1F");
         });
 
         modelBuilder.Entity<PhotoEquipment>(entity =>
         {
-            entity.HasKey(e => e.EquipmentId).HasName("PK__PhotoEqu__34474599AC27D8DA");
+            entity.HasKey(e => e.EquipmentId).HasName("PK__PhotoEqu__34474599B7D60346");
 
             entity.HasOne(d => d.User).WithMany(p => p.PhotoEquipments)
                 .OnDelete(DeleteBehavior.Cascade)
@@ -165,12 +165,12 @@ public partial class SnapdiDbV3Context : DbContext
 
         modelBuilder.Entity<PhotoPortfolio>(entity =>
         {
-            entity.HasKey(e => e.PhotoPortfolioId).HasName("PK__PhotoPor__75BE09A8995A4B3B");
+            entity.HasKey(e => e.PhotoPortfolioId).HasName("PK__PhotoPor__75BE09A8AE74CC21");
         });
 
         modelBuilder.Entity<PhotographerProfile>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__Photogra__1788CCAC6891E63F");
+            entity.HasKey(e => e.UserId).HasName("PK__Photogra__1788CCACD97935F9");
 
             entity.Property(e => e.UserId).ValueGeneratedNever();
 
@@ -183,7 +183,7 @@ public partial class SnapdiDbV3Context : DbContext
 
         modelBuilder.Entity<Review>(entity =>
         {
-            entity.HasKey(e => e.ReviewId).HasName("PK__Review__74BC79AE16AC081A");
+            entity.HasKey(e => e.ReviewId).HasName("PK__Review__74BC79AE14FA1EB8");
 
             entity.HasOne(d => d.Booking).WithMany(p => p.Reviews)
                 .OnDelete(DeleteBehavior.Cascade)
@@ -196,29 +196,29 @@ public partial class SnapdiDbV3Context : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Role__8AFACE3A2FBB328B");
+            entity.HasKey(e => e.RoleId).HasName("PK__Role__8AFACE3AD61AC071");
         });
 
         modelBuilder.Entity<Style>(entity =>
         {
-            entity.HasKey(e => e.StyleId).HasName("PK__Styles__8AD147A0CAD26319");
+            entity.HasKey(e => e.StyleId).HasName("PK__Styles__8AD147A0C035264E");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__User__1788CCACC9E5DFA8");
+            entity.HasKey(e => e.UserId).HasName("PK__User__1788CCAC98BF1C87");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasConstraintName("FK__User__RoleID__3C69FB99");
         });
 
         modelBuilder.Entity<Voucher>(entity =>
         {
-            entity.HasKey(e => e.VoucherId).HasName("PK__Voucher__3AEE79C138533AA7");
+            entity.HasKey(e => e.VoucherId).HasName("PK__Voucher__3AEE79C1B9C1175C");
         });
 
         modelBuilder.Entity<VoucherUsage>(entity =>
         {
-            entity.HasKey(e => e.VoucherUsageId).HasName("PK__VoucherU__4264F82BB2CC4434");
+            entity.HasKey(e => e.VoucherUsageId).HasName("PK__VoucherU__4264F82BBFB948C0");
 
             entity.HasOne(d => d.Booking).WithMany(p => p.VoucherUsages)
                 .OnDelete(DeleteBehavior.Cascade)

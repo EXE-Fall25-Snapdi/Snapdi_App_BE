@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Snapdi.Repositories.Models;
 
 [Table("Voucher")]
-[Index("Code", Name = "UQ__Voucher__A25C5AA76781C3B2", IsUnique = true)]
+[Index("Code", Name = "UQ__Voucher__A25C5AA7912D9D85", IsUnique = true)]
 public partial class Voucher
 {
     [Key]

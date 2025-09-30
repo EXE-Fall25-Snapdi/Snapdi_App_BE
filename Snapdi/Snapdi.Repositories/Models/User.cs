@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Snapdi.Repositories.Models;
 
 [Table("User")]
-[Index("Email", Name = "UQ__User__A9D105347F1DBE9B", IsUnique = true)]
+[Index("Email", Name = "UQ__User__A9D10534DB5CBBA4", IsUnique = true)]
 public partial class User
 {
     [Key]

@@ -16,6 +16,8 @@ public partial class PhotographerProfile
     [Column("EquipmentID")]
     public int? EquipmentId { get; set; }
 
+    public int? YearsOfExperience { get; set; }
+
     public double? AvgRating { get; set; }
 
     public bool IsAvailable { get; set; }

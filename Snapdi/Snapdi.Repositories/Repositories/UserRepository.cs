@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Snapdi.Repositories.Data;
+using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 
@@ -7,7 +7,7 @@ namespace Snapdi.Repositories.Repositories
 {
     public class UserRepository : BaseRepository<User>, IUserRepository
     {
-        public UserRepository(SnapdiDbV3Context context) : base(context)
+        public UserRepository(SnapdiDbV2Context context) : base(context)
         {
         }
 
