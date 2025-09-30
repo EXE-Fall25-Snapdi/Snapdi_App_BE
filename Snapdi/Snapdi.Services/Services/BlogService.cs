@@ -111,7 +111,7 @@ namespace Snapdi.Services.Services
                 Content = createBlogDto.Content,
                 AuthorId = createBlogDto.AuthorId,
                 CreateAt = DateTime.Now,
-                IsActive = true
+                IsActive = createBlogDto.IsActive
             };
 
             var createdBlog = await _blogRepository.AddAsync(blog);
