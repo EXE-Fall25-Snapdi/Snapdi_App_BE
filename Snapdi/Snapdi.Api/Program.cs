@@ -11,7 +11,6 @@ using Snapdi.Repositories.Repositories;
 using Snapdi.Services.Interfaces;
 using Snapdi.Services.Models;
 using Snapdi.Services.Services;
-using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,13 +43,21 @@ if (string.IsNullOrEmpty(jwtKey))
     throw new InvalidOperationException("JWT_KEY is required. Please set it in .env file or configuration.");
 }
 
-// Validate JWT key length (should be at least 32 characters for HMAC SHA256)
 if (jwtKey.Length < 32)
 {
     throw new InvalidOperationException("JWT_KEY must be at least 32 characters long for security.");
 }
 
-Console.WriteLine($"JWT Configuration: Key Length={jwtKey.Length}, Issuer={jwtIssuer}, Audience={jwtAudience}");
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFlutterApp", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Add Authentication services
 builder.Services.AddAuthentication(options =>
@@ -66,19 +73,17 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-
         ValidIssuer = jwtIssuer,
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
-
 });
 
 // Add DbContext
 builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
     options.UseSqlServer(connectionString));
 
-// Configure settings through DI (single source of truth)
+// Configure settings through DI
 builder.Services.Configure<AppSettings>(options =>
 {
     options.BaseUrl = appBaseUrl ?? "https://localhost:7000";
@@ -94,7 +99,6 @@ builder.Services.Configure<EmailSettings>(options =>
     options.FromName = Environment.GetEnvironmentVariable("FROM_NAME") ?? "Snapdi Team";
 });
 
-// Configure JWT settings (single source - no duplication)
 builder.Services.Configure<JwtSettings>(options =>
 {
     options.Key = jwtKey;
@@ -108,12 +112,12 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 
-//// Register services
+// Register services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IKeywordService, KeywordService>();
-builder.Services.AddScoped<JwtService>(); // JwtService will receive JwtSettings via DI
+builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
 
@@ -190,6 +194,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS
+app.UseCors("AllowFlutterApp");
 
 app.UseAuthentication();
 app.UseAuthorization();

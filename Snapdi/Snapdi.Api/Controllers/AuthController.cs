@@ -1,12 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using System.ComponentModel.DataAnnotations;
 using Snapdi.Api.Services;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
+using System.Security.Claims;
 
 namespace Snapdi.Api.Controllers
 {
@@ -67,16 +64,13 @@ namespace Snapdi.Api.Controllers
             if (!user.IsActive)
                 return Unauthorized("Account is not active");
 
-            // Check if email is verified
             if (!user.IsVerify)
                 return Unauthorized("Please verify your email address before logging in");
 
-            // Generate JWT token using JwtService
             var token = _jwtService.GenerateToken(user.UserId, user.Name, user.Email, user.RoleName);
             var refreshToken = _jwtService.GenerateRefreshToken();
-            var refreshTokenExpiry = DateTime.UtcNow.AddDays(7); // 7 days
+            var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
-            // Update refresh token in database
             await _userService.UpdateRefreshTokenAsync(user.UserId, refreshToken, refreshTokenExpiry);
 
             return Ok(new LoginResponseDto
@@ -257,12 +251,10 @@ namespace Snapdi.Api.Controllers
             if (user == null)
                 return Unauthorized("Invalid refresh token");
 
-            // Generate new tokens using JwtService
             var newToken = _jwtService.GenerateToken(user.UserId, user.Name, user.Email, user.RoleName);
             var newRefreshToken = _jwtService.GenerateRefreshToken();
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
-            // Update refresh token in database
             await _userService.UpdateRefreshTokenAsync(user.UserId, newRefreshToken, refreshTokenExpiry);
 
             return Ok(new LoginResponseDto
