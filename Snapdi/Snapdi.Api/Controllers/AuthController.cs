@@ -1,11 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using System.ComponentModel.DataAnnotations;
+using Snapdi.Api.Services;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
+using System.Security.Claims;
 
 namespace Snapdi.Api.Controllers
 {
@@ -14,12 +12,12 @@ namespace Snapdi.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly IConfiguration _configuration;
+        private readonly JwtService _jwtService;
 
-        public AuthController(IUserService userService, IConfiguration configuration)
+        public AuthController(IUserService userService, JwtService jwtService)
         {
             _userService = userService;
-            _configuration = configuration;
+            _jwtService = jwtService;
         }
 
         /// <summary>
@@ -66,16 +64,13 @@ namespace Snapdi.Api.Controllers
             if (!user.IsActive)
                 return Unauthorized("Account is not active");
 
-            // Check if email is verified
             if (!user.IsVerify)
                 return Unauthorized("Please verify your email address before logging in");
 
-            // Generate JWT token
-            var token = GenerateJwtToken(user);
-            var refreshToken = GenerateRefreshToken();
-            var refreshTokenExpiry = DateTime.UtcNow.AddDays(7); // 7 days
+            var token = _jwtService.GenerateToken(user.UserId, user.Name, user.Email, user.RoleName);
+            var refreshToken = _jwtService.GenerateRefreshToken();
+            var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
-            // Update refresh token in database
             await _userService.UpdateRefreshTokenAsync(user.UserId, refreshToken, refreshTokenExpiry);
 
             return Ok(new LoginResponseDto
@@ -256,12 +251,10 @@ namespace Snapdi.Api.Controllers
             if (user == null)
                 return Unauthorized("Invalid refresh token");
 
-            // Generate new tokens
-            var newToken = GenerateJwtToken(user);
-            var newRefreshToken = GenerateRefreshToken();
+            var newToken = _jwtService.GenerateToken(user.UserId, user.Name, user.Email, user.RoleName);
+            var newRefreshToken = _jwtService.GenerateRefreshToken();
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
-            // Update refresh token in database
             await _userService.UpdateRefreshTokenAsync(user.UserId, newRefreshToken, refreshTokenExpiry);
 
             return Ok(new LoginResponseDto
@@ -292,41 +285,35 @@ namespace Snapdi.Api.Controllers
             return Ok("Logged out successfully");
         }
 
-        #region Private Methods
-
-        private string GenerateJwtToken(UserDto user)
+        /// <summary>
+        /// Validate JWT token
+        /// </summary>
+        /// <param name="token">JWT token to validate</param>
+        /// <returns>Token validation result</returns>
+        /// <response code="200">Token is valid</response>
+        /// <response code="400">Token is invalid</response>
+        [HttpPost("validate-token")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public ActionResult ValidateToken([FromBody] string token)
         {
-            var jwtKey = _configuration["JWT:Key"];
-            var jwtIssuer = _configuration["JWT:Issuer"];
-            var jwtAudience = _configuration["JWT:Audience"];
+            var principal = _jwtService.ValidateToken(token);
+            if (principal == null)
+                return BadRequest("Invalid token");
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(jwtKey);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                    new Claim(ClaimTypes.Name, user.Name),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.RoleName ?? "User")
-                }),
-                Expires = DateTime.UtcNow.AddHours(1), // Token expires in 1 hour
-                Issuer = jwtIssuer,
-                Audience = jwtAudience,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
+            var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var username = principal.FindFirst(ClaimTypes.Name)?.Value;
+            var email = principal.FindFirst(ClaimTypes.Email)?.Value;
+            var role = principal.FindFirst(ClaimTypes.Role)?.Value;
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            return Ok(new { 
+                IsValid = true,
+                UserId = userId,
+                Username = username,
+                Email = email,
+                Role = role
+            });
         }
-
-        private static string GenerateRefreshToken()
-        {
-            return Guid.NewGuid().ToString();
-        }
-
-        #endregion
     }
 
     /// <summary>

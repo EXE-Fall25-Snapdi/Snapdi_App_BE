@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using System.Linq.Expressions;
@@ -7,10 +8,10 @@ namespace Snapdi.Repositories.Repositories
 {
     public class BaseRepository<T> : IBaseRepository<T> where T : class
     {
-        protected readonly Snapdi_DB_v1_Context _context;
+        protected readonly SnapdiDbV2Context _context;
         protected readonly DbSet<T> _dbSet;
 
-        public BaseRepository(Snapdi_DB_v1_Context context)
+        public BaseRepository(SnapdiDbV2Context context)
         {
             _context = context;
             _dbSet = context.Set<T>();
@@ -26,9 +27,25 @@ namespace Snapdi.Repositories.Repositories
             return await _dbSet.ToListAsync();
         }
 
+        public virtual async Task<IEnumerable<T>> GetPagedAsync(int pageNumber, int pageSize)
+        {
+            return await _dbSet
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
         public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.Where(predicate).ToListAsync();
+        }
+
+        public virtual async Task<IEnumerable<T>> FindPagedAsync(Expression<Func<T, bool>> predicate, int pageNumber, int pageSize)
+        {
+            return await _dbSet.Where(predicate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
         }
 
         public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)

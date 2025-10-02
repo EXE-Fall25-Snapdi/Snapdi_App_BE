@@ -2,13 +2,15 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Snapdi.Repositories.Models;
+using Microsoft.OpenApi.Models;
+using Snapdi.Api.Services;
+using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
+using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
 using Snapdi.Services.Interfaces;
-using Snapdi.Services.Services;
 using Snapdi.Services.Models;
-using System;
+using Snapdi.Services.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +31,9 @@ var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ??
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? 
                  builder.Configuration["JWT:Audience"];
 
+var jwtExpirationHours = Environment.GetEnvironmentVariable("JWT_EXPIRATION_HOURS") ?? 
+                       builder.Configuration["JWT:ExpirationHours"];
+
 var appBaseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL") ?? 
                 builder.Configuration["App:BaseUrl"];
 
@@ -37,6 +42,22 @@ if (string.IsNullOrEmpty(jwtKey))
 {
     throw new InvalidOperationException("JWT_KEY is required. Please set it in .env file or configuration.");
 }
+
+if (jwtKey.Length < 32)
+{
+    throw new InvalidOperationException("JWT_KEY must be at least 32 characters long for security.");
+}
+
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFlutterApp", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Add Authentication services
 builder.Services.AddAuthentication(options =>
@@ -52,7 +73,6 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-
         ValidIssuer = jwtIssuer,
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
@@ -60,16 +80,15 @@ builder.Services.AddAuthentication(options =>
 });
 
 // Add DbContext
-builder.Services.AddDbContext<Snapdi_DB_v1_Context>(options =>
+builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
     options.UseSqlServer(connectionString));
 
-// Add configuration for app settings
+// Configure settings through DI
 builder.Services.Configure<AppSettings>(options =>
 {
     options.BaseUrl = appBaseUrl ?? "https://localhost:7000";
 });
 
-// Add configuration for email settings
 builder.Services.Configure<EmailSettings>(options =>
 {
     options.SmtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "smtp.gmail.com";
@@ -80,18 +99,81 @@ builder.Services.Configure<EmailSettings>(options =>
     options.FromName = Environment.GetEnvironmentVariable("FROM_NAME") ?? "Snapdi Team";
 });
 
+builder.Services.Configure<JwtSettings>(options =>
+{
+    options.Key = jwtKey;
+    options.Issuer = jwtIssuer;
+    options.Audience = jwtAudience;
+    options.ExpirationHours = int.Parse(jwtExpirationHours ?? "1");
+});
+
 // Register repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IBlogRepository, BlogRepository>();
+builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IBlogService, BlogService>();
+builder.Services.AddScoped<IKeywordService, KeywordService>();
+builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
+// Configure Swagger/OpenAPI with JWT authentication
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "Snapdi API", 
+        Version = "v1",
+        Description = "API for Snapdi Photography Platform",
+        Contact = new OpenApiContact
+        {
+            Name = "Snapdi Team",
+            Email = "support@snapdi.com"
+        }
+    });
+
+    // Add JWT Authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Enter your JWT token in the text input below.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = ParameterLocation.Header,
+            },
+            new List<string>()
+        }
+    });
+
+    // Include XML comments for better documentation
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+});
 
 var app = builder.Build();
 
@@ -99,10 +181,22 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Snapdi API V1");
+        c.RoutePrefix = "swagger";
+        c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
+        c.DefaultModelExpandDepth(2);
+        c.DefaultModelsExpandDepth(-1);
+        c.DisplayOperationId();
+        c.DisplayRequestDuration();
+    });
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS
+app.UseCors("AllowFlutterApp");
 
 app.UseAuthentication();
 app.UseAuthorization();

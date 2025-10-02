@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 
@@ -6,45 +7,51 @@ namespace Snapdi.Repositories.Repositories
 {
     public class UserRepository : BaseRepository<User>, IUserRepository
     {
-        public UserRepository(Snapdi_DB_v1_Context context) : base(context)
+        public UserRepository(SnapdiDbV2Context context) : base(context)
         {
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
             return await _dbSet
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email == email);
         }
 
         public async Task<User?> GetByPhoneAsync(string phone)
         {
             return await _dbSet
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Phone == phone);
         }
 
         public async Task<User?> GetByEmailOrPhoneAsync(string emailOrPhone)
         {
             return await _dbSet
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email == emailOrPhone || u.Phone == emailOrPhone);
         }
 
         public async Task<User?> GetByRefreshTokenAsync(string refreshToken)
         {
             return await _dbSet
-                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken && 
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken &&
                                          u.ExpiredRefreshTokenAt > DateTime.UtcNow);
         }
 
         public async Task<User?> GetByEmailVerificationTokenAsync(string verificationToken)
         {
             return await _dbSet
-                .FirstOrDefaultAsync(u => u.RefreshToken == verificationToken && 
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.RefreshToken == verificationToken &&
                                          u.ExpiredRefreshTokenAt > DateTime.UtcNow);
         }
 
         public async Task<IEnumerable<User>> GetUsersByRoleAsync(int roleId)
         {
             return await _dbSet
+                .Include(u => u.Role)
                 .Where(u => u.RoleId == roleId)
                 .ToListAsync();
         }
@@ -52,6 +59,7 @@ namespace Snapdi.Repositories.Repositories
         public async Task<IEnumerable<User>> GetActiveUsersAsync()
         {
             return await _dbSet
+                .Include(u => u.Role)
                 .Where(u => u.IsActive)
                 .ToListAsync();
         }
@@ -59,6 +67,7 @@ namespace Snapdi.Repositories.Repositories
         public async Task<IEnumerable<User>> GetVerifiedUsersAsync()
         {
             return await _dbSet
+                .Include(u => u.Role)
                 .Where(u => u.IsVerify)
                 .ToListAsync();
         }
@@ -73,10 +82,9 @@ namespace Snapdi.Repositories.Repositories
         public async Task<User?> GetUserWithPhotographerProfileAsync(int userId)
         {
             return await _dbSet
+                .Include(u => u.Role) // Include Role for RoleName
                 .Include(u => u.PhotographerProfile)
-                .ThenInclude(p => p.Equipment)
-                .Include(u => u.PhotographerProfile)
-                .ThenInclude(p => p.PhotoPortfolio)
+                .Include(u => u.PhotoPortfolios)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
         }
 

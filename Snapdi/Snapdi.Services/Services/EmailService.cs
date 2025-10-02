@@ -15,7 +15,7 @@ namespace Snapdi.Services.Services
         private readonly ILogger<EmailService> _logger;
 
         public EmailService(
-            IOptions<EmailSettings> emailSettings, 
+            IOptions<EmailSettings> emailSettings,
             IOptions<AppSettings> appSettings,
             ILogger<EmailService> logger)
         {
@@ -30,7 +30,7 @@ namespace Snapdi.Services.Services
             {
                 var subject = "Verify Your Email Address - Snapdi";
                 var verificationUrl = $"{_appSettings.BaseUrl}/api/auth/verify-email?token={verificationToken}";
-                
+
                 var body = $@"
                     <html>
                     <body>
@@ -61,7 +61,7 @@ namespace Snapdi.Services.Services
             {
                 var subject = "Reset Your Password - Snapdi";
                 var resetUrl = $"{_appSettings.BaseUrl}/reset-password?token={resetToken}";
-                
+
                 var body = $@"
                     <html>
                     <body>
@@ -92,7 +92,7 @@ namespace Snapdi.Services.Services
             try
             {
                 var subject = "Welcome to Snapdi!";
-                
+
                 var body = $@"
                     <html>
                     <body>
@@ -145,7 +145,7 @@ namespace Snapdi.Services.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send email to {Email}. SMTP Settings: Host={Host}, Port={Port}, Username={Username}", 
+                _logger.LogError(ex, "Failed to send email to {Email}. SMTP Settings: Host={Host}, Port={Port}, Username={Username}",
                     toEmail, _emailSettings.SmtpHost, _emailSettings.SmtpPort, _emailSettings.SmtpUsername);
                 return false;
             }
