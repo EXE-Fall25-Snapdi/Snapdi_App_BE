@@ -33,6 +33,95 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Search blogs with advanced filtering
+        /// </summary>
+        [HttpGet("search")]
+        public async Task<ActionResult<PagedResult<BlogDto>>> SearchBlogs(
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] int? authorId = null,
+            [FromQuery] string? keywords = null,
+            [FromQuery] string? keywordIds = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] DateTime? dateFrom = null,
+            [FromQuery] DateTime? dateTo = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                if (pageNumber < 1) pageNumber = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 10;
+
+                var searchDto = new BlogSearchDto
+                {
+                    SearchTerm = searchTerm,
+                    AuthorId = authorId,
+                    IsActive = isActive,
+                    DateFrom = dateFrom,
+                    DateTo = dateTo,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                // Parse keywords (comma-separated string)
+                if (!string.IsNullOrWhiteSpace(keywords))
+                {
+                    searchDto.Keywords = keywords.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                               .Select(k => k.Trim())
+                                               .Where(k => !string.IsNullOrEmpty(k))
+                                               .ToList();
+                }
+
+                // Parse keyword IDs (comma-separated string)
+                if (!string.IsNullOrWhiteSpace(keywordIds))
+                {
+                    var keywordIdList = new List<int>();
+                    var keywordIdStrings = keywordIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    
+                    foreach (var idString in keywordIdStrings)
+                    {
+                        if (int.TryParse(idString.Trim(), out var id))
+                        {
+                            keywordIdList.Add(id);
+                        }
+                    }
+                    
+                    if (keywordIdList.Any())
+                    {
+                        searchDto.KeywordIds = keywordIdList;
+                    }
+                }
+
+                var result = await _blogService.SearchBlogsAsync(searchDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Advanced search blogs with POST body
+        /// </summary>
+        [HttpPost("search")]
+        public async Task<ActionResult<PagedResult<BlogDto>>> SearchBlogsAdvanced([FromBody] BlogSearchDto searchDto)
+        {
+            try
+            {
+                if (searchDto.PageNumber < 1) searchDto.PageNumber = 1;
+                if (searchDto.PageSize < 1 || searchDto.PageSize > 100) searchDto.PageSize = 10;
+
+                var result = await _blogService.SearchBlogsAsync(searchDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Get blogs with paging
         /// </summary>
         [HttpGet("paged")]

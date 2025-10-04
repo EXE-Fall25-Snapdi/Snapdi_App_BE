@@ -20,5 +20,9 @@ namespace Snapdi.Repositories.Interfaces
         Task<int> GetActiveBlogsCountAsync();
         Task<int> GetBlogsByAuthorCountAsync(int authorId);
         Task<int> GetBlogsByKeywordCountAsync(int keywordId);
+        
+        // Search methods
+        Task<IEnumerable<Blog>> SearchBlogsAsync(BlogSearchParameters searchParameters);
+        Task<int> GetSearchBlogsCountAsync(BlogSearchParameters searchParameters);
     }
 }
