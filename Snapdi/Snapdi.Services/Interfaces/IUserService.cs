@@ -13,6 +13,7 @@ namespace Snapdi.Services.Interfaces
         Task<IEnumerable<UserDto>> GetVerifiedUsersAsync();
         Task<UserWithPhotographerDto?> GetUserWithPhotographerProfileAsync(int userId);
         Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
+        Task<UserDto> CreateUserAsync(CreateUserDto createUserDto, bool isCreatedByAdmin = false);
         Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto);
         Task<bool> DeleteUserAsync(int userId);
         Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto);
@@ -27,5 +28,8 @@ namespace Snapdi.Services.Interfaces
         Task<bool> SendEmailVerificationAsync(string email);
         Task<bool> VerifyEmailAsync(string verificationToken);
         Task<bool> ResendEmailVerificationAsync(string email);
+        
+        // New method for filtering and paging
+        Task<PagedResultDto<UserDto>> GetUsersWithFilterAsync(UserFilterDto filterDto);
     }
 }

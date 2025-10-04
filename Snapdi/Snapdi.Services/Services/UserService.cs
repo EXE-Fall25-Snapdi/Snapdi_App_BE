@@ -66,6 +66,11 @@ namespace Snapdi.Services.Services
 
         public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
         {
+            return await CreateUserAsync(createUserDto, false);
+        }
+
+        public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto, bool isCreatedByAdmin = false)
+        {
             // Hash password before saving
             var hashedPassword = HashPassword(createUserDto.Password);
 
@@ -73,25 +78,73 @@ namespace Snapdi.Services.Services
             {
                 Name = createUserDto.Name,
                 Email = createUserDto.Email,
-                Phone = createUserDto.Phone ?? string.Empty,  // Handle null phone
+                Phone = createUserDto.Phone ?? string.Empty,
                 Password = hashedPassword,
                 RoleId = createUserDto.RoleId,
-                LocationAddress = createUserDto.LocationAddress ?? string.Empty,  // Handle null address
-                LocationCity = createUserDto.LocationCity ?? string.Empty,  // Handle null city
-                AvatarUrl = createUserDto.AvatarUrl ?? string.Empty,  // Handle null avatar
-                RefreshToken = string.Empty,  // Initialize as empty
+                LocationAddress = createUserDto.LocationAddress ?? string.Empty,
+                LocationCity = createUserDto.LocationCity ?? string.Empty,
+                AvatarUrl = createUserDto.AvatarUrl ?? string.Empty,
+                RefreshToken = string.Empty,
                 IsActive = true,
-                IsVerify = false,  // Email not verified yet
+                IsVerify = isCreatedByAdmin, // Auto-verify if created by admin
                 CreatedAt = DateTime.UtcNow
             };
 
             var createdUser = await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
 
-            // Send email verification
-            await SendEmailVerificationAsync(createdUser.Email);
+            // Reload user with role information to get RoleName
+            var userWithRole = await _userRepository.GetByIdAsync(createdUser.UserId);
+            if (userWithRole == null)
+            {
+                // Fallback: if we can't reload the user with role, use the created user
+                userWithRole = createdUser;
+            }
 
-            return MapToUserDto(createdUser);
+            // Send email verification only if not created by admin
+            if (!isCreatedByAdmin)
+            {
+                await SendEmailVerificationAsync(userWithRole.Email);
+            }
+            else
+            {
+                // Send welcome email if created by admin (already verified)
+                await _emailService.SendWelcomeEmailAsync(userWithRole.Email, userWithRole.Name);
+            }
+
+            return MapToUserDto(userWithRole);
+        }
+
+        public async Task<PagedResultDto<UserDto>> GetUsersWithFilterAsync(UserFilterDto filterDto)
+        {
+            // Handle null sortDirection by providing default
+            var sortDirection = string.IsNullOrEmpty(filterDto.SortDirection) ? "asc" : filterDto.SortDirection;
+            
+            var (users, totalCount) = await _userRepository.GetUsersWithFilterAsync(
+                filterDto.Page,
+                filterDto.PageSize,
+                filterDto.SearchTerm,
+                filterDto.RoleId,
+                filterDto.IsActive,
+                filterDto.IsVerified,
+                filterDto.LocationCity,
+                filterDto.SortBy,
+                sortDirection,
+                filterDto.CreatedFrom,
+                filterDto.CreatedTo
+            );
+
+            var userDtos = users.Select(MapToUserDto).ToList();
+            var totalPages = (int)Math.Ceiling((double)totalCount / filterDto.PageSize);
+
+            return new PagedResultDto<UserDto>
+            {
+                Items = userDtos,
+                CurrentPage = filterDto.Page,
+                PageSize = filterDto.PageSize,
+                TotalItems = totalCount,
+                TotalPages = totalPages
+            };
         }
 
         public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
@@ -253,13 +306,13 @@ namespace Snapdi.Services.Services
                 RoleName = user.Role?.RoleName,
                 Name = user.Name,
                 Email = user.Email,
-                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone,  // Convert empty string to null for DTO
+                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone,
                 IsActive = user.IsActive,
                 IsVerify = user.IsVerify,
                 CreatedAt = user.CreatedAt,
-                LocationAddress = string.IsNullOrEmpty(user.LocationAddress) ? null : user.LocationAddress,  // Convert empty string to null for DTO
-                LocationCity = string.IsNullOrEmpty(user.LocationCity) ? null : user.LocationCity,  // Convert empty string to null for DTO
-                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl  // Convert empty string to null for DTO
+                LocationAddress = string.IsNullOrEmpty(user.LocationAddress) ? null : user.LocationAddress,
+                LocationCity = string.IsNullOrEmpty(user.LocationCity) ? null : user.LocationCity,
+                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl
             };
         }
 

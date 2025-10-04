@@ -66,6 +66,29 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Get users with filtering and paging (Admin only)
+        /// </summary>
+        [HttpPost("filter")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<PagedResultDto<UserDto>>> GetUsersWithFilter(UserFilterDto filterDto)
+        {
+            // Only validate the required pagination fields
+            if (filterDto.Page < 1)
+            {
+                return BadRequest(new { error = "Invalid page", message = "Page must be greater than 0" });
+            }
+
+            if (filterDto.PageSize < 1 || filterDto.PageSize > 100)
+            {
+                return BadRequest(new { error = "Invalid page size", message = "Page size must be between 1 and 100" });
+            }
+
+            // All other fields can be null - no additional validation needed
+            var result = await _userService.GetUsersWithFilterAsync(filterDto);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Get user by ID (Public endpoint)
         /// </summary>
         [HttpGet("{id}")]
@@ -209,7 +232,8 @@ namespace Snapdi.Api.Controllers
                     return BadRequest(new { error = "Phone already exists", message = $"A user with phone {createUserDto.Phone} already exists" });
                 }
 
-                var user = await _userService.CreateUserAsync(createUserDto);
+                // Create user with admin flag (auto-verified)
+                var user = await _userService.CreateUserAsync(createUserDto, true);
                 return CreatedAtAction(nameof(GetUser), new { id = user.UserId }, user);
             }
             catch (Exception ex)
