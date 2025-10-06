@@ -100,11 +100,12 @@ namespace Snapdi.Api.Controllers
         ///     }
         /// 
         /// Note: Only name, email, and password are required. Other fields are optional.
-        /// After registration, a verification email will be sent automatically.
+        /// After registration, a 6-digit verification code will be sent to your email automatically.
+        /// Use the /api/auth/verify-email-code endpoint to verify your account.
         /// </remarks>
         /// <param name="createUserDto">User registration data</param>
         /// <returns>Created user information</returns>
-        /// <response code="201">User created successfully - verification email sent</response>
+        /// <response code="201">User created successfully - verification code sent via email</response>
         /// <response code="400">Validation error or email/phone already exists</response>
         [HttpPost("register")]
         [ProducesResponseType(typeof(UserDto), 201)]
@@ -125,8 +126,77 @@ namespace Snapdi.Api.Controllers
             var user = await _userService.CreateUserAsync(createUserDto);
             return CreatedAtAction("GetUser", "Users", new { id = user.UserId }, new { 
                 User = user, 
-                Message = "Registration successful. Please check your email to verify your account." 
+                Message = "Registration successful. Please check your email for a 6-digit verification code." 
             });
+        }
+
+        /// <summary>
+        /// Photographer registration with additional required fields
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        /// 
+        ///     POST /api/auth/register-photographer
+        ///     {
+        ///         "name": "Jane Smith",
+        ///         "email": "jane@example.com",
+        ///         "phone": "+1234567890",
+        ///         "password": "securePassword123",
+        ///         "locationAddress": "123 Photography St",
+        ///         "locationCity": "New York",
+        ///         "yearsOfExperience": "5 years",
+        ///         "equipmentDescription": "Canon EOS R5, Sony A7R IV, various lenses",
+        ///         "description": "Professional wedding and portrait photographer",
+        ///         "isAvailable": true,
+        ///         "avatarUrl": "https://example.com/avatar.jpg"
+        ///     }
+        /// 
+        /// Minimal request (without optional fields):
+        /// 
+        ///     POST /api/auth/register-photographer
+        ///     {
+        ///         "name": "Mobile Photographer",
+        ///         "email": "mobile@example.com",
+        ///         "password": "securePassword123",
+        ///         "locationCity": "San Francisco",
+        ///         "yearsOfExperience": "3 years",
+        ///         "equipmentDescription": "Canon EOS R6, portable equipment"
+        ///     }
+        /// 
+        /// Note: Required fields are name, email, password, locationCity, yearsOfExperience, and equipmentDescription.
+        /// LocationAddress is optional - useful for mobile photographers or those who prefer not to share address.
+        /// After registration, a 6-digit verification code will be sent to your email automatically.
+        /// Use the /api/auth/verify-email-code endpoint to verify your account before you can start accepting bookings.
+        /// </remarks>
+        /// <param name="createPhotographerDto">Photographer registration data</param>
+        /// <returns>Created photographer information with profile</returns>
+        /// <response code="201">Photographer created successfully - verification code sent via email</response>
+        /// <response code="400">Validation error or email/phone already exists</response>
+        [HttpPost("register-photographer")]
+        [ProducesResponseType(typeof(PhotographerRegistrationResponseDto), 201)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<PhotographerRegistrationResponseDto>> RegisterPhotographer(CreatePhotographerDto createPhotographerDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            // Check if email already exists
+            if (await _userService.IsEmailExistsAsync(createPhotographerDto.Email))
+                return BadRequest("Email already exists");
+
+            // Check if phone already exists (if provided)
+            if (!string.IsNullOrEmpty(createPhotographerDto.Phone) && await _userService.IsPhoneExistsAsync(createPhotographerDto.Phone))
+                return BadRequest("Phone number already exists");
+
+            var photographerUser = await _userService.CreatePhotographerAsync(createPhotographerDto);
+            
+            var response = new PhotographerRegistrationResponseDto
+            {
+                User = photographerUser,
+                Message = "Photographer registration successful. Please check your email for a 6-digit verification code to verify your account before you can start accepting bookings."
+            };
+
+            return CreatedAtAction("GetUserWithPhotographer", "Users", new { id = photographerUser.UserId }, response);
         }
 
         /// <summary>
@@ -174,6 +244,37 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Verify email address using 6-digit code
+        /// </summary>
+        /// <param name="verifyEmailWithCodeDto">Email and verification code</param>
+        /// <returns>Verification result</returns>
+        /// <response code="200">Email verified successfully</response>
+        /// <response code="400">Invalid or expired code</response>
+        /// <response code="404">User not found</response>
+        [HttpPost("verify-email-code")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult> VerifyEmailWithCode(VerifyEmailWithCodeDto verifyEmailWithCodeDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _userService.GetUserByEmailAsync(verifyEmailWithCodeDto.Email);
+            if (user == null)
+                return NotFound("User not found");
+
+            if (user.IsVerify)
+                return BadRequest("Email is already verified");
+
+            var result = await _userService.VerifyEmailWithCodeAsync(verifyEmailWithCodeDto.Email, verifyEmailWithCodeDto.Code);
+            if (!result)
+                return BadRequest("Invalid or expired verification code");
+
+            return Ok(new { Message = "Email verified successfully! You can now log in to your account." });
+        }
+
+        /// <summary>
         /// Resend email verification
         /// </summary>
         /// <param name="resendVerificationDto">Email to resend verification to</param>
@@ -205,34 +306,65 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
-        /// Send email verification to specific email
+        /// Send verification code to email
         /// </summary>
-        /// <param name="emailVerificationDto">Email verification request</param>
+        /// <param name="resendVerificationCodeDto">Email to send code to</param>
         /// <returns>Send result</returns>
-        /// <response code="200">Verification email sent</response>
-        /// <response code="400">Invalid email or already verified</response>
+        /// <response code="200">Verification code sent</response>
+        /// <response code="400">Invalid email, already verified, or rate limited</response>
         /// <response code="404">User not found</response>
-        [HttpPost("send-verification")]
+        [HttpPost("send-verification-code")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult> SendEmailVerification(EmailVerificationDto emailVerificationDto)
+        public async Task<ActionResult> SendVerificationCode(ResendVerificationCodeDto resendVerificationCodeDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var user = await _userService.GetUserByEmailAsync(emailVerificationDto.Email);
+            var user = await _userService.GetUserByEmailAsync(resendVerificationCodeDto.Email);
             if (user == null)
                 return NotFound("User not found");
 
             if (user.IsVerify)
                 return BadRequest("Email is already verified");
 
-            var result = await _userService.SendEmailVerificationAsync(emailVerificationDto.Email);
+            var result = await _userService.SendVerificationCodeAsync(resendVerificationCodeDto.Email);
             if (!result)
-                return BadRequest("Failed to send verification email");
+                return BadRequest("Failed to send verification code. Please try again in a few minutes.");
 
-            return Ok(new { Message = "Verification email sent. Please check your inbox." });
+            return Ok(new { Message = "Verification code sent to your email. Please check your inbox." });
+        }
+
+        /// <summary>
+        /// Resend verification code to email
+        /// </summary>
+        /// <param name="resendVerificationCodeDto">Email to resend code to</param>
+        /// <returns>Resend result</returns>
+        /// <response code="200">Verification code sent</response>
+        /// <response code="400">Invalid email, already verified, or rate limited</response>
+        /// <response code="404">User not found</response>
+        [HttpPost("resend-verification-code")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult> ResendVerificationCode(ResendVerificationCodeDto resendVerificationCodeDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _userService.GetUserByEmailAsync(resendVerificationCodeDto.Email);
+            if (user == null)
+                return NotFound("User not found");
+
+            if (user.IsVerify)
+                return BadRequest("Email is already verified");
+
+            var result = await _userService.ResendVerificationCodeAsync(resendVerificationCodeDto.Email);
+            if (!result)
+                return BadRequest("Failed to send verification code. Please try again in a few minutes.");
+
+            return Ok(new { Message = "Verification code sent to your email. Please check your inbox." });
         }
 
         /// <summary>

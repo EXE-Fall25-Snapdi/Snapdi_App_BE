@@ -24,12 +24,20 @@ namespace Snapdi.Services.Interfaces
         Task<UserDto?> AuthenticateAsync(string emailOrPhone, string password);
         Task<UserDto?> GetUserByRefreshTokenAsync(string refreshToken);
         
-        // Email verification methods
+        // Token-based email verification methods (existing)
         Task<bool> SendEmailVerificationAsync(string email);
         Task<bool> VerifyEmailAsync(string verificationToken);
         Task<bool> ResendEmailVerificationAsync(string email);
         
-        // New method for filtering and paging
+        // Code-based email verification methods (new)
+        Task<bool> SendVerificationCodeAsync(string email);
+        Task<bool> VerifyEmailWithCodeAsync(string email, string code);
+        Task<bool> ResendVerificationCodeAsync(string email);
+        
+        // User filtering method
         Task<PagedResultDto<UserDto>> GetUsersWithFilterAsync(UserFilterDto filterDto);
+        
+        // Photographer registration method
+        Task<UserWithPhotographerDto> CreatePhotographerAsync(CreatePhotographerDto createPhotographerDto);
     }
 }

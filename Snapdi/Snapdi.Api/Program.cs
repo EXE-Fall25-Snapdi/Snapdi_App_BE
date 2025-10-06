@@ -111,12 +111,14 @@ builder.Services.Configure<JwtSettings>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
+builder.Services.AddScoped<IPhotographerProfileRepository, PhotographerProfileRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IKeywordService, KeywordService>();
+builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();

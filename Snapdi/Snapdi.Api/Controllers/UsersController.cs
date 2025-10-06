@@ -276,7 +276,7 @@ namespace Snapdi.Api.Controllers
                 if (currentUserIdClaim != null && int.TryParse(currentUserIdClaim.Value, out int currentUserId))
                 {
                     // User can update their own profile OR admin can update any profile
-                    if (currentUserId != id && currentUserRole != "Admin")
+                    if (currentUserId != id && currentUserRole != "ADMIN")
                     {
                         return Forbid("You can only update your own profile unless you are an admin");
                     }

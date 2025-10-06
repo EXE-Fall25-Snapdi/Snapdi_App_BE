@@ -9,11 +9,19 @@ namespace Snapdi.Services.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IEmailService _emailService;
+        private readonly IPhotographerProfileRepository _photographerProfileRepository;
+        private readonly IVerificationCodeService _verificationCodeService;
 
-        public UserService(IUserRepository userRepository, IEmailService emailService)
+        public UserService(
+            IUserRepository userRepository, 
+            IEmailService emailService, 
+            IPhotographerProfileRepository photographerProfileRepository,
+            IVerificationCodeService verificationCodeService)
         {
             _userRepository = userRepository;
             _emailService = emailService;
+            _photographerProfileRepository = photographerProfileRepository;
+            _verificationCodeService = verificationCodeService;
         }
 
         public async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -97,14 +105,14 @@ namespace Snapdi.Services.Services
             var userWithRole = await _userRepository.GetByIdAsync(createdUser.UserId);
             if (userWithRole == null)
             {
-                // Fallback: if we can't reload the user with role, use the created user
                 userWithRole = createdUser;
             }
 
             // Send email verification only if not created by admin
             if (!isCreatedByAdmin)
             {
-                await SendEmailVerificationAsync(userWithRole.Email);
+                // Use code-based verification by default
+                await SendVerificationCodeAsync(userWithRole.Email);
             }
             else
             {
@@ -113,6 +121,55 @@ namespace Snapdi.Services.Services
             }
 
             return MapToUserDto(userWithRole);
+        }
+
+        public async Task<UserWithPhotographerDto> CreatePhotographerAsync(CreatePhotographerDto createPhotographerDto)
+        {
+            const int PHOTOGRAPHER_ROLE_ID = 3;
+
+            // Hash password before saving
+            var hashedPassword = HashPassword(createPhotographerDto.Password);
+
+            var user = new User
+            {
+                Name = createPhotographerDto.Name,
+                Email = createPhotographerDto.Email,
+                Phone = createPhotographerDto.Phone ?? string.Empty,
+                Password = hashedPassword,
+                RoleId = PHOTOGRAPHER_ROLE_ID, // Set photographer role
+                LocationAddress = createPhotographerDto.LocationAddress ?? string.Empty, // Now optional
+                LocationCity = createPhotographerDto.LocationCity,
+                AvatarUrl = createPhotographerDto.AvatarUrl ?? string.Empty,
+                RefreshToken = string.Empty,
+                IsActive = true,
+                IsVerify = false, // Email verification required for public registration
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var createdUser = await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
+
+            // Create photographer profile
+            var photographerProfile = new PhotographerProfile
+            {
+                UserId = createdUser.UserId,
+                YearsOfExperience = createPhotographerDto.YearsOfExperience,
+                EquipmentDescription = createPhotographerDto.EquipmentDescription,
+                Description = createPhotographerDto.Description,
+                IsAvailable = createPhotographerDto.IsAvailable,
+                AvgRating = 0.0 // Initial rating
+            };
+
+            await _photographerProfileRepository.AddAsync(photographerProfile);
+            await _photographerProfileRepository.SaveChangesAsync();
+
+            // Send verification code
+            await SendVerificationCodeAsync(createdUser.Email);
+
+            // Reload user with complete information
+            var userWithPhotographer = await _userRepository.GetUserWithPhotographerProfileAsync(createdUser.UserId);
+            
+            return MapToUserWithPhotographerDto(userWithPhotographer!);
         }
 
         public async Task<PagedResultDto<UserDto>> GetUsersWithFilterAsync(UserFilterDto filterDto)
@@ -250,6 +307,7 @@ namespace Snapdi.Services.Services
             return user != null ? MapToUserDto(user) : null;
         }
 
+        // Token-based email verification methods (existing)
         public async Task<bool> SendEmailVerificationAsync(string email)
         {
             var user = await _userRepository.GetByEmailAsync(email);
@@ -293,6 +351,58 @@ namespace Snapdi.Services.Services
         public async Task<bool> ResendEmailVerificationAsync(string email)
         {
             return await SendEmailVerificationAsync(email);
+        }
+
+        // Code-based email verification methods (new)
+        public async Task<bool> SendVerificationCodeAsync(string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                return false;
+
+            if (user.IsVerify)
+                return false; // Already verified
+
+            // Check rate limiting
+            if (!_verificationCodeService.CanRequestNewCode(email))
+                return false; // Too many requests
+
+            // Generate verification code
+            var verificationCode = _verificationCodeService.GenerateCode(email);
+
+            // Send verification code email
+            return await _emailService.SendVerificationCodeAsync(user.Email, user.Name, verificationCode);
+        }
+
+        public async Task<bool> VerifyEmailWithCodeAsync(string email, string code)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                return false;
+
+            if (user.IsVerify)
+                return false; // Already verified
+
+            // Verify the code
+            if (!_verificationCodeService.VerifyCode(email, code))
+                return false;
+
+            // Mark user as verified
+            await _userRepository.VerifyEmailAsync(user.UserId);
+            await _userRepository.SaveChangesAsync();
+
+            // Remove the used code
+            _verificationCodeService.RemoveCode(email);
+
+            // Send welcome email
+            await _emailService.SendWelcomeEmailAsync(user.Email, user.Name);
+
+            return true;
+        }
+
+        public async Task<bool> ResendVerificationCodeAsync(string email)
+        {
+            return await SendVerificationCodeAsync(email);
         }
 
         #region Private Methods
