@@ -21,5 +21,19 @@ namespace Snapdi.Repositories.Interfaces
         Task UpdateUserStatusAsync(int userId, bool isActive, bool isVerify);
         Task UpdateEmailVerificationTokenAsync(int userId, string verificationToken, DateTime expiredAt);
         Task VerifyEmailAsync(int userId);
+        
+        // New method for filtering and paging
+        Task<(IEnumerable<User> Users, int TotalCount)> GetUsersWithFilterAsync(
+            int page, 
+            int pageSize, 
+            string? searchTerm = null,
+            int? roleId = null,
+            bool? isActive = null,
+            bool? isVerified = null,
+            string? locationCity = null,
+            string? sortBy = null,
+            string? sortDirection = "asc",
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null);
     }
 }

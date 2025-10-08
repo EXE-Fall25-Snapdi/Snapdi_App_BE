@@ -9,11 +9,19 @@ namespace Snapdi.Services.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IEmailService _emailService;
+        private readonly IPhotographerProfileRepository _photographerProfileRepository;
+        private readonly IVerificationCodeService _verificationCodeService;
 
-        public UserService(IUserRepository userRepository, IEmailService emailService)
+        public UserService(
+            IUserRepository userRepository, 
+            IEmailService emailService, 
+            IPhotographerProfileRepository photographerProfileRepository,
+            IVerificationCodeService verificationCodeService)
         {
             _userRepository = userRepository;
             _emailService = emailService;
+            _photographerProfileRepository = photographerProfileRepository;
+            _verificationCodeService = verificationCodeService;
         }
 
         public async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -66,6 +74,11 @@ namespace Snapdi.Services.Services
 
         public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
         {
+            return await CreateUserAsync(createUserDto, false);
+        }
+
+        public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto, bool isCreatedByAdmin = false)
+        {
             // Hash password before saving
             var hashedPassword = HashPassword(createUserDto.Password);
 
@@ -73,25 +86,122 @@ namespace Snapdi.Services.Services
             {
                 Name = createUserDto.Name,
                 Email = createUserDto.Email,
-                Phone = createUserDto.Phone ?? string.Empty,  // Handle null phone
+                Phone = createUserDto.Phone ?? string.Empty,
                 Password = hashedPassword,
                 RoleId = createUserDto.RoleId,
-                LocationAddress = createUserDto.LocationAddress ?? string.Empty,  // Handle null address
-                LocationCity = createUserDto.LocationCity ?? string.Empty,  // Handle null city
-                AvatarUrl = createUserDto.AvatarUrl ?? string.Empty,  // Handle null avatar
-                RefreshToken = string.Empty,  // Initialize as empty
+                LocationAddress = createUserDto.LocationAddress ?? string.Empty,
+                LocationCity = createUserDto.LocationCity ?? string.Empty,
+                AvatarUrl = createUserDto.AvatarUrl ?? string.Empty,
+                RefreshToken = string.Empty,
                 IsActive = true,
-                IsVerify = false,  // Email not verified yet
+                IsVerify = isCreatedByAdmin, // Auto-verify if created by admin
                 CreatedAt = DateTime.UtcNow
             };
 
             var createdUser = await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
 
-            // Send email verification
-            await SendEmailVerificationAsync(createdUser.Email);
+            // Reload user with role information to get RoleName
+            var userWithRole = await _userRepository.GetByIdAsync(createdUser.UserId);
+            if (userWithRole == null)
+            {
+                userWithRole = createdUser;
+            }
 
-            return MapToUserDto(createdUser);
+            // Send email verification only if not created by admin
+            if (!isCreatedByAdmin)
+            {
+                // Use code-based verification by default
+                await SendVerificationCodeAsync(userWithRole.Email);
+            }
+            else
+            {
+                // Send welcome email if created by admin (already verified)
+                await _emailService.SendWelcomeEmailAsync(userWithRole.Email, userWithRole.Name);
+            }
+
+            return MapToUserDto(userWithRole);
+        }
+
+        public async Task<UserWithPhotographerDto> CreatePhotographerAsync(CreatePhotographerDto createPhotographerDto)
+        {
+            const int PHOTOGRAPHER_ROLE_ID = 3;
+
+            // Hash password before saving
+            var hashedPassword = HashPassword(createPhotographerDto.Password);
+
+            var user = new User
+            {
+                Name = createPhotographerDto.Name,
+                Email = createPhotographerDto.Email,
+                Phone = createPhotographerDto.Phone ?? string.Empty,
+                Password = hashedPassword,
+                RoleId = PHOTOGRAPHER_ROLE_ID, // Set photographer role
+                LocationAddress = createPhotographerDto.LocationAddress ?? string.Empty, // Now optional
+                LocationCity = createPhotographerDto.LocationCity,
+                AvatarUrl = createPhotographerDto.AvatarUrl ?? string.Empty,
+                RefreshToken = string.Empty,
+                IsActive = true,
+                IsVerify = false, // Email verification required for public registration
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var createdUser = await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
+
+            // Create photographer profile
+            var photographerProfile = new PhotographerProfile
+            {
+                UserId = createdUser.UserId,
+                YearsOfExperience = createPhotographerDto.YearsOfExperience,
+                EquipmentDescription = createPhotographerDto.EquipmentDescription,
+                Description = createPhotographerDto.Description,
+                IsAvailable = createPhotographerDto.IsAvailable,
+                AvgRating = 0.0 // Initial rating
+            };
+
+            await _photographerProfileRepository.AddAsync(photographerProfile);
+            await _photographerProfileRepository.SaveChangesAsync();
+
+            // Send verification code
+            await SendVerificationCodeAsync(createdUser.Email);
+
+            // Reload user with complete information
+            var userWithPhotographer = await _userRepository.GetUserWithPhotographerProfileAsync(createdUser.UserId);
+            
+            return MapToUserWithPhotographerDto(userWithPhotographer!);
+        }
+
+        public async Task<PagedResultDto<UserDto>> GetUsersWithFilterAsync(UserFilterDto filterDto)
+        {
+            // Handle null sortDirection by providing default
+            var sortDirection = string.IsNullOrEmpty(filterDto.SortDirection) ? "asc" : filterDto.SortDirection;
+            
+            var (users, totalCount) = await _userRepository.GetUsersWithFilterAsync(
+                filterDto.Page,
+                filterDto.PageSize,
+                filterDto.SearchTerm,
+                filterDto.RoleId,
+                filterDto.IsActive,
+                filterDto.IsVerified,
+                filterDto.LocationCity,
+                filterDto.SortBy,
+                sortDirection,
+                filterDto.CreatedFrom,
+                filterDto.CreatedTo
+            );
+
+            var userDtos = users.Select(MapToUserDto).ToList();
+            var totalPages = (int)Math.Ceiling((double)totalCount / filterDto.PageSize);
+
+            return new PagedResultDto<UserDto>
+            {
+                Items = userDtos,
+                CurrentPage = filterDto.Page,
+                PageSize = filterDto.PageSize,
+                TotalItems = totalCount,
+                TotalPages = totalPages
+            };
         }
 
         public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
@@ -197,6 +307,7 @@ namespace Snapdi.Services.Services
             return user != null ? MapToUserDto(user) : null;
         }
 
+        // Token-based email verification methods (existing)
         public async Task<bool> SendEmailVerificationAsync(string email)
         {
             var user = await _userRepository.GetByEmailAsync(email);
@@ -242,6 +353,58 @@ namespace Snapdi.Services.Services
             return await SendEmailVerificationAsync(email);
         }
 
+        // Code-based email verification methods (new)
+        public async Task<bool> SendVerificationCodeAsync(string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                return false;
+
+            if (user.IsVerify)
+                return false; // Already verified
+
+            // Check rate limiting
+            if (!_verificationCodeService.CanRequestNewCode(email))
+                return false; // Too many requests
+
+            // Generate verification code
+            var verificationCode = _verificationCodeService.GenerateCode(email);
+
+            // Send verification code email
+            return await _emailService.SendVerificationCodeAsync(user.Email, user.Name, verificationCode);
+        }
+
+        public async Task<bool> VerifyEmailWithCodeAsync(string email, string code)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                return false;
+
+            if (user.IsVerify)
+                return false; // Already verified
+
+            // Verify the code
+            if (!_verificationCodeService.VerifyCode(email, code))
+                return false;
+
+            // Mark user as verified
+            await _userRepository.VerifyEmailAsync(user.UserId);
+            await _userRepository.SaveChangesAsync();
+
+            // Remove the used code
+            _verificationCodeService.RemoveCode(email);
+
+            // Send welcome email
+            await _emailService.SendWelcomeEmailAsync(user.Email, user.Name);
+
+            return true;
+        }
+
+        public async Task<bool> ResendVerificationCodeAsync(string email)
+        {
+            return await SendVerificationCodeAsync(email);
+        }
+
         #region Private Methods
 
         private static UserDto MapToUserDto(User user)
@@ -253,13 +416,13 @@ namespace Snapdi.Services.Services
                 RoleName = user.Role?.RoleName,
                 Name = user.Name,
                 Email = user.Email,
-                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone,  // Convert empty string to null for DTO
+                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone,
                 IsActive = user.IsActive,
                 IsVerify = user.IsVerify,
                 CreatedAt = user.CreatedAt,
-                LocationAddress = string.IsNullOrEmpty(user.LocationAddress) ? null : user.LocationAddress,  // Convert empty string to null for DTO
-                LocationCity = string.IsNullOrEmpty(user.LocationCity) ? null : user.LocationCity,  // Convert empty string to null for DTO
-                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl  // Convert empty string to null for DTO
+                LocationAddress = string.IsNullOrEmpty(user.LocationAddress) ? null : user.LocationAddress,
+                LocationCity = string.IsNullOrEmpty(user.LocationCity) ? null : user.LocationCity,
+                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl
             };
         }
 

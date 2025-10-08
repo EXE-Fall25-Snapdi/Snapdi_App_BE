@@ -13,6 +13,7 @@ namespace Snapdi.Services.Interfaces
         Task<IEnumerable<UserDto>> GetVerifiedUsersAsync();
         Task<UserWithPhotographerDto?> GetUserWithPhotographerProfileAsync(int userId);
         Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
+        Task<UserDto> CreateUserAsync(CreateUserDto createUserDto, bool isCreatedByAdmin = false);
         Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto);
         Task<bool> DeleteUserAsync(int userId);
         Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto);
@@ -23,9 +24,20 @@ namespace Snapdi.Services.Interfaces
         Task<UserDto?> AuthenticateAsync(string emailOrPhone, string password);
         Task<UserDto?> GetUserByRefreshTokenAsync(string refreshToken);
         
-        // Email verification methods
+        // Token-based email verification methods (existing)
         Task<bool> SendEmailVerificationAsync(string email);
         Task<bool> VerifyEmailAsync(string verificationToken);
         Task<bool> ResendEmailVerificationAsync(string email);
+        
+        // Code-based email verification methods (new)
+        Task<bool> SendVerificationCodeAsync(string email);
+        Task<bool> VerifyEmailWithCodeAsync(string email, string code);
+        Task<bool> ResendVerificationCodeAsync(string email);
+        
+        // User filtering method
+        Task<PagedResultDto<UserDto>> GetUsersWithFilterAsync(UserFilterDto filterDto);
+        
+        // Photographer registration method
+        Task<UserWithPhotographerDto> CreatePhotographerAsync(CreatePhotographerDto createPhotographerDto);
     }
 }
