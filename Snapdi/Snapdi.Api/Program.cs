@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Snapdi.Api.Services;
@@ -58,6 +59,10 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
+//  AutoMapper v15
+builder.Services.AddAutoMapper(cfg => { }, typeof(Program).Assembly);
+
 
 // Add Authentication services
 builder.Services.AddAuthentication(options =>
