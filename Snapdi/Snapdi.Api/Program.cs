@@ -112,6 +112,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 builder.Services.AddScoped<IPhotographerProfileRepository, PhotographerProfileRepository>();
+builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
+builder.Services.AddScoped<IVoucherUsageRepository, VoucherUsageRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -119,6 +121,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IKeywordService, KeywordService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
+builder.Services.AddScoped<IVoucherUsageService, VoucherUsageService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
