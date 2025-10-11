@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
@@ -205,6 +206,7 @@ namespace Snapdi.Api.Controllers
         /// Get blogs by author ID
         /// </summary>
         [HttpGet("author/{authorId}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<BlogDto>>> GetBlogsByAuthor(int authorId)
         {
             try
@@ -222,6 +224,7 @@ namespace Snapdi.Api.Controllers
         /// Get blogs by author ID with paging
         /// </summary>
         [HttpGet("author/{authorId}/paged")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<PagedResult<BlogDto>>> GetBlogsByAuthorPaged(int authorId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             try
@@ -243,6 +246,7 @@ namespace Snapdi.Api.Controllers
         /// Get blogs by keyword ID
         /// </summary>
         [HttpGet("keyword/{keywordId}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<BlogDto>>> GetBlogsByKeyword(int keywordId)
         {
             try
@@ -260,6 +264,7 @@ namespace Snapdi.Api.Controllers
         /// Get blogs by keyword ID with paging
         /// </summary>
         [HttpGet("keyword/{keywordId}/paged")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<PagedResult<BlogDto>>> GetBlogsByKeywordPaged(int keywordId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             try
@@ -281,6 +286,7 @@ namespace Snapdi.Api.Controllers
         /// Create a new blog
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<BlogDto>> CreateBlog([FromBody] CreateBlogDto createBlogDto)
         {
             try
@@ -303,6 +309,7 @@ namespace Snapdi.Api.Controllers
         /// Update an existing blog
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<BlogDto>> UpdateBlog(int id, [FromBody] UpdateBlogDto updateBlogDto)
         {
             try
@@ -330,6 +337,7 @@ namespace Snapdi.Api.Controllers
         /// Delete a blog
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteBlog(int id)
         {
             try
@@ -352,6 +360,7 @@ namespace Snapdi.Api.Controllers
         /// Add a keyword to a blog
         /// </summary>
         [HttpPost("{blogId}/keywords/{keywordId}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> AddKeywordToBlog(int blogId, int keywordId)
         {
             try
@@ -374,6 +383,7 @@ namespace Snapdi.Api.Controllers
         /// Remove a keyword from a blog
         /// </summary>
         [HttpDelete("{blogId}/keywords/{keywordId}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> RemoveKeywordFromBlog(int blogId, int keywordId)
         {
             try
@@ -396,6 +406,7 @@ namespace Snapdi.Api.Controllers
         /// Add multiple keywords to a blog by keyword IDs
         /// </summary>
         [HttpPost("{blogId}/keywords")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> AddKeywordsToBlog(int blogId, [FromBody] List<int> keywordIds)
         {
             try
@@ -423,6 +434,7 @@ namespace Snapdi.Api.Controllers
         /// Add multiple keywords to a blog by keyword names
         /// </summary>
         [HttpPost("{blogId}/keywords/by-names")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> AddKeywordsToBlogByNames(int blogId, [FromBody] List<string> keywordNames)
         {
             try
@@ -450,6 +462,7 @@ namespace Snapdi.Api.Controllers
         /// Update all keywords for a blog by IDs
         /// </summary>
         [HttpPut("{blogId}/keywords")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> UpdateBlogKeywords(int blogId, [FromBody] List<int> keywordIds)
         {
             try
@@ -477,6 +490,7 @@ namespace Snapdi.Api.Controllers
         /// Update all keywords for a blog by names
         /// </summary>
         [HttpPut("{blogId}/keywords/by-names")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> UpdateBlogKeywordsByNames(int blogId, [FromBody] List<string> keywordNames)
         {
             try
