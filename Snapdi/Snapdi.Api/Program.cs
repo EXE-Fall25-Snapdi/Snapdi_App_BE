@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.SignalR;
 using Snapdi.Api.Services;
 using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
@@ -77,6 +78,21 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+
+    // Allow JWT over WebSockets for SignalR using access_token query string
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // Add DbContext
@@ -112,16 +128,21 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 builder.Services.AddScoped<IPhotographerProfileRepository, PhotographerProfileRepository>();
+builder.Services.AddScoped<IPhotoPortfolioRepository, PhotoPortfolioRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IKeywordService, KeywordService>();
+builder.Services.AddScoped<IPhotoPortfolioService, PhotoPortfolioService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
+
+// SignalR for realtime features
+builder.Services.AddSignalR();
 
 // Configure Swagger/OpenAPI with JWT authentication
 builder.Services.AddEndpointsApiExplorer();
@@ -204,5 +225,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map SignalR hubs
+app.MapHub<Snapdi.Api.Hubs.ChatHub>("/hubs/chat");
 
 app.Run();

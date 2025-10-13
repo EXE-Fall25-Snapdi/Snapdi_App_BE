@@ -26,6 +26,9 @@ public partial class PhotographerProfile
     [StringLength(500)]
     public string? Description { get; set; }
 
+    [StringLength(50)]
+    public string? LevelPhotographer { get; set; }
+
     [ForeignKey("UserId")]
     [InverseProperty("PhotographerProfile")]
     public virtual User User { get; set; } = null!;
