@@ -165,13 +165,8 @@ namespace Snapdi.Api.Controllers
         /// 
         /// Note: Required fields are name, email, password, locationCity, yearsOfExperience, and equipmentDescription.
         /// LocationAddress is optional - useful for mobile photographers or those who prefer not to share address.
-        /// 
-        /// IMPORTANT NOTES:
-        /// - levelPhotographer will be set to null by default and can only be assigned by admin later
-        /// - isAvailable defaults to false - photographers need admin approval before they can accept bookings
-        /// - After registration, a 6-digit verification code will be sent to your email automatically
-        /// - Use the /api/auth/verify-email-code endpoint to verify your account
-        /// - Once verified, wait for admin to assign your photographer level and set availability
+        /// After registration, a 6-digit verification code will be sent to your email automatically.
+        /// Use the /api/auth/verify-email-code endpoint to verify your account before you can start accepting bookings.
         /// </remarks>
         /// <param name="createPhotographerDto">Photographer registration data</param>
         /// <returns>Created photographer information with profile</returns>
@@ -198,7 +193,7 @@ namespace Snapdi.Api.Controllers
             var response = new PhotographerRegistrationResponseDto
             {
                 User = photographerUser,
-                Message = "Photographer registration successful. Please check your email for a 6-digit verification code to verify your account. After verification, an admin will review and assign your photographer level before you can start accepting bookings."
+                Message = "Photographer registration successful. Please check your email for a 6-digit verification code to verify your account before you can start accepting bookings."
             };
 
             return CreatedAtAction("GetUserWithPhotographer", "Users", new { id = photographerUser.UserId }, response);

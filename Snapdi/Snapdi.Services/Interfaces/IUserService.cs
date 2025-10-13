@@ -43,6 +43,9 @@ namespace Snapdi.Services.Interfaces
         // Get photographers pending level assignment (for admin)
         Task<IEnumerable<UserWithPhotographerDto>> GetPhotographersPendingLevelAssignmentAsync();
         
+        // Get photographers pending level assignment grouped by portfolio status (for admin)
+        Task<PhotograhpersPendingLevelResponseDto> GetPhotographersPendingLevelAssignmentGroupedAsync();
+        
         // Update photographer level (for admin)
         Task<bool> UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
     }

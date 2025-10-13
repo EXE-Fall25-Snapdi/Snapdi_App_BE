@@ -412,6 +412,33 @@ namespace Snapdi.Services.Services
             return photographers.Select(MapToUserWithPhotographerDto);
         }
 
+        public async Task<PhotograhpersPendingLevelResponseDto> GetPhotographersPendingLevelAssignmentGroupedAsync()
+        {
+            var photographers = await _userRepository.GetPhotographersPendingLevelAssignmentAsync();
+            var photographerDtos = photographers.Select(MapToUserWithPhotographerDto).ToList();
+            
+            var response = new PhotograhpersPendingLevelResponseDto();
+            
+            foreach (var photographer in photographerDtos)
+            {
+                // Check if photographer has any portfolio photos
+                if (photographer.PhotoPortfolios != null && photographer.PhotoPortfolios.Any())
+                {
+                    response.WithPortfolio.Add(photographer);
+                }
+                else
+                {
+                    response.WithoutPortfolio.Add(photographer);
+                }
+            }
+            
+            // Sort by creation date (newest first) within each group
+            response.WithPortfolio = response.WithPortfolio.OrderByDescending(p => p.CreatedAt).ToList();
+            response.WithoutPortfolio = response.WithoutPortfolio.OrderByDescending(p => p.CreatedAt).ToList();
+            
+            return response;
+        }
+
         public async Task<bool> UpdatePhotographerLevelAsync(int userId, string levelPhotographer)
         {
             try

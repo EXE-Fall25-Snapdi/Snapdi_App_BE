@@ -545,6 +545,50 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Get photographers pending level assignment grouped by portfolio status (Admin only)
+        /// </summary>
+        /// <remarks>
+        /// Returns photographers who need level assignment, grouped into:
+        /// - WithPortfolio: Photographers who have uploaded portfolio photos
+        /// - WithoutPortfolio: Photographers who haven't uploaded portfolio photos yet
+        /// 
+        /// Criteria for inclusion:
+        /// - Have photographer role
+        /// - Are verified (IsVerify = true)
+        /// - Are not available (IsAvailable = false) 
+        /// - Don't have levelPhotographer assigned (null or empty)
+        /// 
+        /// Response includes useful statistics and recommendations for admin review.
+        /// 
+        /// Sample response:
+        /// {
+        ///   "withPortfolio": [...], // Array of photographers with portfolios
+        ///   "withoutPortfolio": [...], // Array of photographers without portfolios  
+        ///   "totalCount": 15,
+        ///   "withPortfolioCount": 10,
+        ///   "withoutPortfolioCount": 5,
+        ///   "withPortfolioPercentage": 66.7,
+        ///   "withoutPortfolioPercentage": 33.3,
+        ///   "summary": "Found 15 photographer(s) pending level assignment: 10 with portfolio (66.7%), 5 without portfolio (33.3%).",
+        ///   "recommendation": "Recommend reviewing photographers with portfolios first as they are more ready for level assignment."
+        /// }
+        /// </remarks>
+        [HttpGet("photographers/pending-level/grouped")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<PhotograhpersPendingLevelResponseDto>> GetPhotographersPendingLevelAssignmentGrouped()
+        {
+            try
+            {
+                var response = await _userService.GetPhotographersPendingLevelAssignmentGroupedAsync();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while retrieving photographers pending level assignment grouped by portfolio status", details = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Get available photographer levels (Admin only)
         /// </summary>
         /// <returns>List of available photographer levels</returns>
