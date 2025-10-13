@@ -232,6 +232,30 @@ namespace Snapdi.Repositories.Repositories
             return (users, totalCount);
         }
 
+        public async Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync()
+        {
+            const int PHOTOGRAPHER_ROLE_ID = 3;
+            
+            return await _context.Users
+                .Include(u => u.Role)
+                .Include(u => u.PhotographerProfile)
+                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
+                           u.IsVerify == true && 
+                           u.PhotographerProfile != null && 
+                           u.PhotographerProfile.IsAvailable == false && 
+                           (u.PhotographerProfile.LevelPhotographer == null || u.PhotographerProfile.LevelPhotographer == ""))
+                .ToListAsync();
+        }
+
+        public async Task UpdatePhotographerLevelAsync(int userId, string levelPhotographer)
+        {
+            var photographerProfile = await _context.PhotographerProfiles.FindAsync(userId);
+            if (photographerProfile != null)
+            {
+                photographerProfile.LevelPhotographer = levelPhotographer;
+            }
+        }
+
         public override async Task<User?> GetByIdAsync(int id)
         {
             return await _context.Users

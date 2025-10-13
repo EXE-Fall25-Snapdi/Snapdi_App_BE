@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
 using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
 
 namespace Snapdi.Api.Controllers
 {
@@ -517,6 +518,81 @@ namespace Snapdi.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Get photographers pending level assignment (Admin only)
+        /// </summary>
+        /// <remarks>
+        /// Returns photographers who:
+        /// - Have photographer role
+        /// - Are verified (IsVerify = true)
+        /// - Are not available (IsAvailable = false) 
+        /// - Don't have levelPhotographer assigned (null or empty)
+        /// </remarks>
+        [HttpGet("photographers/pending-level")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<IEnumerable<UserWithPhotographerDto>>> GetPhotographersPendingLevelAssignment()
+        {
+            try
+            {
+                var photographers = await _userService.GetPhotographersPendingLevelAssignmentAsync();
+                return Ok(photographers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while retrieving photographers pending level assignment", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Update photographer level (Admin only)
+        /// </summary>
+        /// <param name="id">Photographer user ID</param>
+        /// <param name="updateLevelDto">Level assignment data</param>
+        [HttpPatch("{id}/photographer-level")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult> UpdatePhotographerLevel(int id, [FromBody] UpdatePhotographerLevelDto updateLevelDto)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest(new { error = "Invalid user ID", message = "User ID must be a positive number" });
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { 
+                        error = "Validation failed", 
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                // Verify user exists and has photographer profile
+                var photographer = await _userService.GetUserWithPhotographerProfileAsync(id);
+                if (photographer == null || photographer.PhotographerProfile == null)
+                {
+                    return NotFound(new { error = "Photographer not found", message = $"User with ID {id} does not exist or has no photographer profile" });
+                }
+
+                var result = await _userService.UpdatePhotographerLevelAsync(id, updateLevelDto.LevelPhotographer);
+                if (!result)
+                {
+                    return BadRequest(new { error = "Update failed", message = "Failed to update photographer level" });
+                }
+
+                return Ok(new { message = "Photographer level updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while updating photographer level", details = ex.Message });
+            }
+        }
+
         #region Private Helper Methods
 
         /// <summary>
@@ -566,5 +642,12 @@ namespace Snapdi.Api.Controllers
     {
         public bool IsActive { get; set; }
         public bool IsVerify { get; set; }
+    }
+
+    public class UpdatePhotographerLevelDto
+    {
+        [Required(ErrorMessage = "Level photographer is required")]
+        [MaxLength(50, ErrorMessage = "Level photographer cannot exceed 50 characters")]
+        public string LevelPhotographer { get; set; } = string.Empty;
     }
 }

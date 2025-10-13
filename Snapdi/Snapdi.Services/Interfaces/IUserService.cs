@@ -39,5 +39,11 @@ namespace Snapdi.Services.Interfaces
         
         // Photographer registration method
         Task<UserWithPhotographerDto> CreatePhotographerAsync(CreatePhotographerDto createPhotographerDto);
+        
+        // Get photographers pending level assignment (for admin)
+        Task<IEnumerable<UserWithPhotographerDto>> GetPhotographersPendingLevelAssignmentAsync();
+        
+        // Update photographer level (for admin)
+        Task<bool> UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
     }
 }

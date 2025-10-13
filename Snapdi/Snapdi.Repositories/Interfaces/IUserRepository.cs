@@ -35,5 +35,11 @@ namespace Snapdi.Repositories.Interfaces
             string? sortDirection = "asc",
             DateTime? createdFrom = null,
             DateTime? createdTo = null);
+            
+        // Get photographers pending level assignment
+        Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync();
+        
+        // Update photographer level
+        Task UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
     }
 }

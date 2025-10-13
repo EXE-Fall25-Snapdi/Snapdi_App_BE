@@ -156,6 +156,7 @@ namespace Snapdi.Services.Services
                 YearsOfExperience = createPhotographerDto.YearsOfExperience,
                 EquipmentDescription = createPhotographerDto.EquipmentDescription,
                 Description = createPhotographerDto.Description,
+                LevelPhotographer = createPhotographerDto.LevelPhotographer,
                 IsAvailable = createPhotographerDto.IsAvailable,
                 AvgRating = 0.0 // Initial rating
             };
@@ -405,6 +406,26 @@ namespace Snapdi.Services.Services
             return await SendVerificationCodeAsync(email);
         }
 
+        public async Task<IEnumerable<UserWithPhotographerDto>> GetPhotographersPendingLevelAssignmentAsync()
+        {
+            var photographers = await _userRepository.GetPhotographersPendingLevelAssignmentAsync();
+            return photographers.Select(MapToUserWithPhotographerDto);
+        }
+
+        public async Task<bool> UpdatePhotographerLevelAsync(int userId, string levelPhotographer)
+        {
+            try
+            {
+                await _userRepository.UpdatePhotographerLevelAsync(userId, levelPhotographer);
+                await _userRepository.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         #region Private Methods
 
         private static UserDto MapToUserDto(User user)
@@ -454,7 +475,8 @@ namespace Snapdi.Services.Services
                     YearsOfExperience = user.PhotographerProfile.YearsOfExperience,
                     AvgRating = user.PhotographerProfile.AvgRating,
                     IsAvailable = user.PhotographerProfile.IsAvailable,
-                    Description = user.PhotographerProfile.Description
+                    Description = user.PhotographerProfile.Description,
+                    LevelPhotographer = user.PhotographerProfile.LevelPhotographer
                 };
             }
 
