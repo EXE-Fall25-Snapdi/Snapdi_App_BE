@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
+using Snapdi.Services.Constants;
 using System.Security.Claims;
 using System.ComponentModel.DataAnnotations;
 
@@ -544,6 +545,20 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Get available photographer levels (Admin only)
+        /// </summary>
+        /// <returns>List of available photographer levels</returns>
+        [HttpGet("photographers/levels")]
+        [Authorize(Roles = "ADMIN")]
+        public ActionResult<string[]> GetAvailablePhotographerLevels()
+        {
+            return Ok(new { 
+                levels = PhotographerLevels.AllLevels,
+                message = "Available photographer levels that can be assigned to photographers"
+            });
+        }
+
+        /// <summary>
         /// Update photographer level (Admin only)
         /// </summary>
         /// <param name="id">Photographer user ID</param>
@@ -572,6 +587,15 @@ namespace Snapdi.Api.Controllers
                     });
                 }
 
+                // Validate photographer level
+                if (!PhotographerLevels.IsValidLevel(updateLevelDto.LevelPhotographer))
+                {
+                    return BadRequest(new { 
+                        error = "Invalid photographer level", 
+                        message = $"Level '{updateLevelDto.LevelPhotographer}' is not valid. Available levels: {string.Join(", ", PhotographerLevels.AllLevels)}"
+                    });
+                }
+
                 // Verify user exists and has photographer profile
                 var photographer = await _userService.GetUserWithPhotographerProfileAsync(id);
                 if (photographer == null || photographer.PhotographerProfile == null)
@@ -585,7 +609,11 @@ namespace Snapdi.Api.Controllers
                     return BadRequest(new { error = "Update failed", message = "Failed to update photographer level" });
                 }
 
-                return Ok(new { message = "Photographer level updated successfully" });
+                return Ok(new { 
+                    message = "Photographer level updated successfully",
+                    userId = id,
+                    newLevel = updateLevelDto.LevelPhotographer
+                });
             }
             catch (Exception ex)
             {
@@ -644,8 +672,16 @@ namespace Snapdi.Api.Controllers
         public bool IsVerify { get; set; }
     }
 
+    /// <summary>
+    /// DTO for updating photographer level (Admin only)
+    /// </summary>
     public class UpdatePhotographerLevelDto
     {
+        /// <summary>
+        /// Photographer level - must be one of the predefined levels
+        /// Available levels: "Beginner", "Intermediate", "Advanced", "Professional", "Expert"
+        /// </summary>
+        /// <example>Professional</example>
         [Required(ErrorMessage = "Level photographer is required")]
         [MaxLength(50, ErrorMessage = "Level photographer cannot exceed 50 characters")]
         public string LevelPhotographer { get; set; } = string.Empty;

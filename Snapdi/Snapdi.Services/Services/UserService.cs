@@ -156,7 +156,7 @@ namespace Snapdi.Services.Services
                 YearsOfExperience = createPhotographerDto.YearsOfExperience,
                 EquipmentDescription = createPhotographerDto.EquipmentDescription,
                 Description = createPhotographerDto.Description,
-                LevelPhotographer = createPhotographerDto.LevelPhotographer,
+                LevelPhotographer = null, // Always null on registration - only admin can set this
                 IsAvailable = createPhotographerDto.IsAvailable,
                 AvgRating = 0.0 // Initial rating
             };

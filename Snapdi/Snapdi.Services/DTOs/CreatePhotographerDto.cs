@@ -49,9 +49,6 @@ namespace Snapdi.Services.DTOs
         [MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string? Description { get; set; }
 
-        [MaxLength(50, ErrorMessage = "Level photographer cannot exceed 50 characters")]
-        public string? LevelPhotographer { get; set; }
-
         public bool IsAvailable { get; set; } = false;
     }
 
