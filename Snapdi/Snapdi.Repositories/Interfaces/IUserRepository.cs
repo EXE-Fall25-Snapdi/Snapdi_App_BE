@@ -35,6 +35,25 @@ namespace Snapdi.Repositories.Interfaces
             string? sortDirection = "asc",
             DateTime? createdFrom = null,
             DateTime? createdTo = null);
+        
+        // Photographer search method
+        Task<(IEnumerable<User> Photographers, int TotalCount)> SearchPhotographersAsync(
+            int page,
+            int pageSize,
+            string? searchTerm = null,
+            string? locationCity = null,
+            string? levelPhotographer = null,
+            bool? isAvailable = null,
+            bool? isVerify = null,
+            bool? isActive = null,
+            double? minRating = null,
+            double? maxRating = null,
+            string? yearsOfExperience = null,
+            bool? hasPortfolio = null,
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            string? sortBy = "createdAt",
+            string? sortDirection = "desc");
             
         // Get photographers pending level assignment
         Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync();
