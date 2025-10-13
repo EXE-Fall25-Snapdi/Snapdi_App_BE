@@ -439,6 +439,61 @@ namespace Snapdi.Services.Services
             return response;
         }
 
+        public async Task<PhotograhpersPendingLevelPagedResponseDto> GetPhotographersPendingLevelAssignmentPagedAsync(GetPhotographersPendingLevelRequestDto request)
+        {
+            // Validate pagination parameters
+            var page = Math.Max(1, request.Page);
+            var pageSize = Math.Clamp(request.PageSize, 1, 50);
+
+            var (withPortfolioUsers, withoutPortfolioUsers, withPortfolioTotalCount, withoutPortfolioTotalCount) = 
+                await _userRepository.GetPhotographersPendingLevelAssignmentPagedAsync(
+                    page,
+                    pageSize,
+                    request.SearchTerm,
+                    request.HasPortfolio,
+                    request.LocationCity,
+                    request.SortBy,
+                    request.SortDirection,
+                    request.CreatedFrom,
+                    request.CreatedTo
+                );
+
+            // Map to DTOs
+            var withPortfolioDtos = withPortfolioUsers.Select(MapToUserWithPhotographerDto).ToList();
+            var withoutPortfolioDtos = withoutPortfolioUsers.Select(MapToUserWithPhotographerDto).ToList();
+
+            // Calculate pagination info
+            var withPortfolioTotalPages = (int)Math.Ceiling((double)withPortfolioTotalCount / pageSize);
+            var withoutPortfolioTotalPages = (int)Math.Ceiling((double)withoutPortfolioTotalCount / pageSize);
+
+            var response = new PhotograhpersPendingLevelPagedResponseDto
+            {
+                WithPortfolio = new PagedResultDto<UserWithPhotographerDto>
+                {
+                    Items = withPortfolioDtos,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalItems = withPortfolioTotalCount,
+                    TotalPages = withPortfolioTotalPages
+                },
+                WithoutPortfolio = new PagedResultDto<UserWithPhotographerDto>
+                {
+                    Items = withoutPortfolioDtos,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalItems = withoutPortfolioTotalCount,
+                    TotalPages = withoutPortfolioTotalPages
+                },
+                Summary = new PhotographersPendingLevelSummaryDto
+                {
+                    WithPortfolioCount = withPortfolioTotalCount,
+                    WithoutPortfolioCount = withoutPortfolioTotalCount
+                }
+            };
+
+            return response;
+        }
+
         public async Task<bool> UpdatePhotographerLevelAsync(int userId, string levelPhotographer)
         {
             try

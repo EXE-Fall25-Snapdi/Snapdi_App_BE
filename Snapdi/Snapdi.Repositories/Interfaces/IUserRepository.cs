@@ -39,6 +39,20 @@ namespace Snapdi.Repositories.Interfaces
         // Get photographers pending level assignment
         Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync();
         
+        // Get photographers pending level assignment with paging and filtering
+        Task<(IEnumerable<User> WithPortfolio, IEnumerable<User> WithoutPortfolio, int WithPortfolioTotalCount, int WithoutPortfolioTotalCount)> 
+            GetPhotographersPendingLevelAssignmentPagedAsync(
+                int page,
+                int pageSize,
+                string? searchTerm = null,
+                bool? hasPortfolio = null,
+                string? locationCity = null,
+                string? sortBy = "createdAt",
+                string? sortDirection = "desc",
+                DateTime? createdFrom = null,
+                DateTime? createdTo = null
+            );
+        
         // Update photographer level
         Task UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
     }
