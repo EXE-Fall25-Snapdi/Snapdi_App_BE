@@ -1,0 +1,218 @@
+﻿-- ========================================
+-- Create Database
+-- ========================================
+CREATE DATABASE Snapdi_DB_v2u1;
+GO
+
+USE Snapdi_DB_v2u1;
+GO
+
+-- ========================================
+-- Tables
+-- ========================================
+
+-- Keyword
+CREATE TABLE Keyword (
+    KeywordID INT IDENTITY(1,1) PRIMARY KEY,
+    Keyword NVARCHAR(255) NOT NULL
+);
+
+-- Role
+CREATE TABLE Role (
+    RoleID INT IDENTITY(1,1) PRIMARY KEY,
+    RoleName NVARCHAR(100) NOT NULL
+);
+
+-- User
+CREATE TABLE [User] (
+    UserID INT IDENTITY(1,1) PRIMARY KEY,
+    RoleID INT,
+    Name NVARCHAR(255) NOT NULL,
+    Email NVARCHAR(255) NOT NULL UNIQUE,
+    Phone NVARCHAR(50),
+    Password NVARCHAR(255) NOT NULL,
+    RefreshToken NVARCHAR(255),
+    ExpiredRefreshTokenAt DATETIME,
+    IsActive BIT NOT NULL,
+    IsVerify BIT NOT NULL,
+    CreatedAt DATETIME NOT NULL,
+    LocationAddress NVARCHAR(255),
+    LocationCity NVARCHAR(100),
+    AvatarUrl NVARCHAR(255),
+    FOREIGN KEY (RoleID) REFERENCES Role(RoleID)
+);
+
+-- Blog 
+CREATE TABLE Blog (
+    BlogID INT IDENTITY(1,1) PRIMARY KEY,
+    AuthorID INT,
+    Title NVARCHAR(255) NOT NULL,
+    ThumbnailUrl NVARCHAR(255) NOT NULL,
+    Content NVARCHAR(MAX) NOT NULL,
+    CreateAt DATETIME NOT NULL,
+    UpdateAt DATETIME,
+    IsActive BIT NOT NULL,
+    FOREIGN KEY (AuthorID) REFERENCES [User](UserID)
+);
+
+-- KeywordsInBlog (bảng trung gian Many-to-Many)
+CREATE TABLE KeywordsInBlog (
+    BlogID INT NOT NULL,
+    KeywordID INT NOT NULL,
+    PRIMARY KEY (BlogID, KeywordID),
+    FOREIGN KEY (BlogID) REFERENCES Blog(BlogID) ON DELETE CASCADE,
+    FOREIGN KEY (KeywordID) REFERENCES Keyword(KeywordID) ON DELETE CASCADE
+);
+
+-- PhotoPortfolio
+CREATE TABLE PhotoPortfolio (
+    PhotoPortfolioID INT IDENTITY(1,1) PRIMARY KEY,
+	UserID INT,
+    PhotoUrl NVARCHAR(500) NOT NULL
+	FOREIGN KEY (UserID) REFERENCES [User](UserID) ON DELETE CASCADE
+);
+
+-- PhotographerProfile
+CREATE TABLE PhotographerProfile (
+    UserID INT PRIMARY KEY,
+    EquipmentDescription NVARCHAR(500),
+	YearsOfExperience NVARCHAR(100),
+    AvgRating FLOAT,
+    IsAvailable BIT NOT NULL,
+    Description NVARCHAR(500),
+    FOREIGN KEY (UserID) REFERENCES [User](UserID) ON DELETE CASCADE,
+);
+
+-- Styles
+CREATE TABLE Styles (
+    StyleID INT IDENTITY(1,1) PRIMARY KEY,
+    StyleName NVARCHAR(100) NOT NULL
+);
+
+-- BookingStatus
+CREATE TABLE BookingStatus (
+    StatusID INT IDENTITY(1,1) PRIMARY KEY,
+    StatusName NVARCHAR(100) NOT NULL
+);
+
+-- Booking
+CREATE TABLE Booking (
+    BookingID INT IDENTITY(1,1) PRIMARY KEY,
+    CustomerID INT,
+    PhotographerID INT,
+    ScheduleAt DATETIME NOT NULL,
+    LocationCity NVARCHAR(100),
+    LocationAddress NVARCHAR(255),
+    StyleID INT,
+    StatusID INT,
+    Price FLOAT NOT NULL,
+    FOREIGN KEY (CustomerID) REFERENCES [User](UserID),
+    FOREIGN KEY (PhotographerID) REFERENCES [User](UserID),
+    FOREIGN KEY (StyleID) REFERENCES Styles(StyleID),
+    FOREIGN KEY (StatusID) REFERENCES BookingStatus(StatusID)
+);
+
+-- Review
+CREATE TABLE Review (
+    ReviewID INT IDENTITY(1,1) PRIMARY KEY,
+    BookingID INT,
+    FromUserID INT,
+    ToUserID INT,
+    Rating FLOAT NOT NULL,
+    Comment NVARCHAR(MAX),
+    CreateAt DATETIME NOT NULL,
+    FOREIGN KEY (BookingID) REFERENCES Booking(BookingID) ON DELETE CASCADE,
+    FOREIGN KEY (FromUserID) REFERENCES [User](UserID),
+    FOREIGN KEY (ToUserID) REFERENCES [User](UserID)
+);
+
+-- Voucher
+CREATE TABLE Voucher (
+    VoucherID INT IDENTITY(1,1) PRIMARY KEY,
+    Code NVARCHAR(50) NOT NULL UNIQUE,
+    Description NVARCHAR(255),
+    DiscountType NVARCHAR(50),
+    DiscountValue FLOAT NOT NULL,
+    MaxDiscount FLOAT,
+    MinSpend FLOAT,
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NOT NULL,
+    UsageLimit INT,
+    IsActive BIT NOT NULL
+);
+
+-- VoucherUsage
+CREATE TABLE VoucherUsage (
+    VoucherUsageID INT IDENTITY(1,1) PRIMARY KEY,
+    BookingID INT,
+    VoucherID INT,
+    UserID INT,
+    UsedAt DATETIME NOT NULL,
+    FOREIGN KEY (BookingID) REFERENCES Booking(BookingID) ON DELETE CASCADE,
+    FOREIGN KEY (VoucherID) REFERENCES Voucher(VoucherID) ON DELETE CASCADE,
+    FOREIGN KEY (UserID) REFERENCES [User](UserID) ON DELETE CASCADE
+);
+
+-- FeePolicy
+CREATE TABLE FeePolicy (
+    FeePolicyID INT IDENTITY(1,1) PRIMARY KEY,
+    TransactionType NVARCHAR(100),
+    FeePercent FLOAT NOT NULL,
+    EffectiveDate DATETIME NOT NULL,
+    ExpiryDate DATETIME,
+    IsActive BIT NOT NULL
+);
+
+-- PaymentStatus
+CREATE TABLE PaymentStatus (
+    PaymentStatusID INT IDENTITY(1,1) PRIMARY KEY,
+    StatusName NVARCHAR(100) NOT NULL
+);
+
+-- Payment
+CREATE TABLE Payment (
+    PaymentID INT IDENTITY(1,1) PRIMARY KEY,
+    BookingID INT,
+    Amount FLOAT NOT NULL,
+    FeePolicyID INT,
+    FeePercent FLOAT,
+    FeeAmount FLOAT,
+    NetAmount FLOAT,
+    TransactionMethod NVARCHAR(50),
+    TransactionReference NVARCHAR(255),
+    PaymentStatusID INT,
+    PaymentDate DATETIME NOT NULL,
+    FOREIGN KEY (BookingID) REFERENCES Booking(BookingID) ON DELETE CASCADE,
+    FOREIGN KEY (FeePolicyID) REFERENCES FeePolicy(FeePolicyID),
+    FOREIGN KEY (PaymentStatusID) REFERENCES PaymentStatus(PaymentStatusID)
+);
+
+-- Conversations
+CREATE TABLE Conversations (
+    ConversationID INT IDENTITY(1,1) PRIMARY KEY,
+    Type NVARCHAR(50),
+    CreateAt DATETIME NOT NULL
+);
+
+-- ConversationParticipants (Composite Key)
+CREATE TABLE ConversationParticipants (
+    ConversationID INT,
+    UserID INT,
+    JoinedAt DATETIME NOT NULL,
+    PRIMARY KEY (ConversationID, UserID),
+    FOREIGN KEY (ConversationID) REFERENCES Conversations(ConversationID) ON DELETE CASCADE,
+    FOREIGN KEY (UserID) REFERENCES [User](UserID) ON DELETE CASCADE
+);
+
+-- Messages
+CREATE TABLE Messages (
+    MessageID INT IDENTITY(1,1) PRIMARY KEY,
+    ConversationID INT,
+    SenderID INT,
+    Content NVARCHAR(MAX) NOT NULL,
+    SendAt DATETIME NOT NULL,
+    Status NVARCHAR(50),
+    ExpiredDate DATETIME,
+    FOREIGN KEY (ConversationID) REFERENCES Conversations(ConversationID) ON DELETE CASCADE,
+    FOREIGN KEY (SenderID) REFERENCES [User](UserID) ON DELETE CASCADE
+);
