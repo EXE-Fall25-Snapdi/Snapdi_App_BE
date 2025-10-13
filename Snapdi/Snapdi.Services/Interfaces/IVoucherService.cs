@@ -1,5 +1,5 @@
 ﻿using Snapdi.Repositories.Models;
-using Snapdi.Services.DTOs;
+using Snapdi.Services.DTOs.RequestModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;

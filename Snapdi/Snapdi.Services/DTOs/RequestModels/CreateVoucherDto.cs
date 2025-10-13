@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Snapdi.Services.DTOs
+namespace Snapdi.Services.DTOs.RequestModels
 {
     public class CreateVoucherDto
     {

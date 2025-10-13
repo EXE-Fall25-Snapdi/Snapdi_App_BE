@@ -48,14 +48,8 @@ namespace Snapdi.Api.Controllers
         {
             try
             {
-                //var voucherUsage = new VoucherUsage
-                //{
-                //    UserId = voucherUsageDto.UserId,
-                //    BookingId = voucherUsageDto.BookingId,
-                //    VoucherId = voucherUsageDto.VoucherId,
-                //    UsedAt = DateTime.UtcNow
-                //};
                 await _voucherUsageService.AddAsync(voucherUsage);
+
                 return Ok("Voucher usage recorded successfully.");
             }
             catch (Exception ex)

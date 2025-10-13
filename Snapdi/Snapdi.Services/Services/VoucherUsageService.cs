@@ -8,10 +8,15 @@ namespace Snapdi.Services.Services
     {
         private readonly IVoucherUsageRepository _voucherUsageRepository;
         private readonly IVoucherRepository _voucherRepository;
-        public VoucherUsageService(IVoucherUsageRepository voucherUsageRepository, IVoucherRepository voucherRepository)
+        private readonly IBookingRepository _bookingRepository;
+        public VoucherUsageService(
+            IVoucherUsageRepository voucherUsageRepository,
+            IVoucherRepository voucherRepository, 
+            IBookingRepository bookingRepository)
         {
             _voucherUsageRepository = voucherUsageRepository;
             _voucherRepository = voucherRepository;
+            _bookingRepository = bookingRepository;
         }
 
         public async Task AddAsync(VoucherUsage voucherUsage)
@@ -49,6 +54,37 @@ namespace Snapdi.Services.Services
                 throw new Exception("User has already used this voucher.");
             }
 
+            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+            if(booking == null)
+            {
+                throw new Exception("Booking not existed");
+            }
+
+            if(voucher.MinSpend.HasValue && booking.Price < voucher.MinSpend.Value)
+            {
+                throw new Exception($"Booking total must be at least {voucher.MinSpend.Value} to use this voucher.");
+            }
+
+            double discountAmount = 0;
+
+            if (voucher.DiscountType?.ToLower() == "percent")
+            {
+                discountAmount = booking.Price * (voucher.DiscountValue / 100);
+                if (voucher.MaxDiscount.HasValue)
+                {
+                    discountAmount = Math.Min(discountAmount, voucher.MaxDiscount.Value);
+                }
+            }
+            else if (voucher.DiscountType?.ToLower() == "fixed")
+            {
+                discountAmount = voucher.DiscountValue;
+            }
+
+            discountAmount = Math.Max(0, discountAmount);
+
+            booking.Price -= discountAmount;
+
             var voucherUsage = new VoucherUsage
             {
                 UserId = userId,
@@ -58,6 +94,7 @@ namespace Snapdi.Services.Services
             };
 
             await _voucherUsageRepository.AddAsync(voucherUsage);
+            await _bookingRepository.UpdateAsync(booking);
         }
 
         public async Task<int> CountAsync(int voucherId)

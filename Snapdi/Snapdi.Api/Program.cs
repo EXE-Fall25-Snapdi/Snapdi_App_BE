@@ -119,6 +119,7 @@ builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 builder.Services.AddScoped<IPhotographerProfileRepository, PhotographerProfileRepository>();
 builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped<IVoucherUsageRepository, VoucherUsageRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -128,6 +129,7 @@ builder.Services.AddScoped<IKeywordService, KeywordService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IVoucherUsageService, VoucherUsageService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();

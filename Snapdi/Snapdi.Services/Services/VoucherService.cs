@@ -1,6 +1,6 @@
 ﻿using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
-using Snapdi.Services.DTOs;
+using Snapdi.Services.DTOs.RequestModels;
 using Snapdi.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -19,22 +19,6 @@ namespace Snapdi.Services.Services
         }
         public async Task CreateAsync(CreateVoucherDto dto)
         {
-            //var existingVoucher = await _voucherRepository.GetByCodeAsync(voucher.Code);
-
-            //if (existingVoucher != null)
-            //{
-            //    throw new Exception("Voucher code already exists.");
-            //}
-
-            //var date = DateTime.UtcNow;
-
-            //if (voucher.StartDate < date || voucher.EndDate < date)
-            //{
-            //    throw new Exception("Voucher dates are not valid.");
-            //}
-
-            //await _voucherRepository.AddAsync(voucher);
-
             var existingVoucher = await _voucherRepository.GetByCodeAsync(dto.Code);
 
             if (existingVoucher != null)
