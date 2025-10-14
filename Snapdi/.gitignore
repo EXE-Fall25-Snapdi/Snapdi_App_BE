@@ -121,3 +121,12 @@ Desktop.ini
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# PostgreSQL
+*.sql.bak
+pgdata/
+postgres_data/
