@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # PostgreSQL Database
@@ -30,13 +30,13 @@ services:
     environment:
       # Database Configuration
       CONNECTION_STRING: "Host=postgres;Port=5432;Database=snapdi_db;Username=snapdi_user;Password=snapdi_password_123;Include Error Detail=true"
-      
+
       # JWT Configuration
       JWT_KEY: "your-super-secret-jwt-key-minimum-32-characters-long-for-security"
       JWT_ISSUER: "SnapdiAPI"
       JWT_AUDIENCE: "SnapdiClient"
       JWT_EXPIRATION_HOURS: "24"
-      
+
       # App Configuration
       APP_BASE_URL: "http://localhost:8080"
       ASPNETCORE_ENVIRONMENT: "Development"

@@ -25,16 +25,18 @@
 2. Connect repository GitHub của bạn
 3. Chọn repository `Snapdi_App_BE`
 4. Điền thông tin:
-   
+
    ### Basic Settings:
+
    - **Name**: `snapdi-api`
    - **Region**: Chọn cùng region với database
    - **Branch**: `kietnt` (hoặc branch bạn muốn)
    - **Root Directory**: `Snapdi_App_BE/Snapdi`
    - **Environment**: `Docker`
    - **Dockerfile Path**: `./Dockerfile`
-   
+
    ### Advanced Settings:
+
    - **Docker Command**: Để trống (sử dụng ENTRYPOINT từ Dockerfile)
    - **Auto-Deploy**: Yes
 
@@ -42,19 +44,19 @@
 
    ```
    CONNECTION_STRING = <Paste Internal Database URL từ bước 1>
-   
+
    JWT_KEY = your-super-secret-jwt-key-minimum-32-characters-long-for-security
-   
+
    JWT_ISSUER = SnapdiAPI
-   
+
    JWT_AUDIENCE = SnapdiClient
-   
+
    JWT_EXPIRATION_HOURS = 24
-   
+
    APP_BASE_URL = https://snapdi-api.onrender.com
-   
+
    ASPNETCORE_ENVIRONMENT = Production
-   
+
    # Email settings (nếu có)
    SMTP_HOST = smtp.gmail.com
    SMTP_PORT = 587
@@ -74,6 +76,7 @@ Sau khi service deploy thành công, bạn cần migrate database schema từ SQ
 
 1. Trên local, update connection string trong `.env` sang PostgreSQL
 2. Chạy lệnh tạo migration mới:
+
    ```bash
    cd BE2/Snapdi_App_BE/Snapdi/Snapdi.Api
    dotnet ef migrations add InitialPostgreSQL --project ../Snapdi.Repositories
@@ -89,12 +92,10 @@ Sau khi service deploy thành công, bạn cần migrate database schema từ SQ
 
 1. Export schema từ SQL Server:
    - Sử dụng tools như `pg_dump` hoặc export SQL script
-   
 2. Convert SQL Server syntax sang PostgreSQL syntax:
    - Thay đổi data types (e.g., `NVARCHAR` → `VARCHAR`, `DATETIME` → `TIMESTAMP`)
    - Thay đổi identity columns: `IDENTITY(1,1)` → `SERIAL` hoặc `GENERATED ALWAYS AS IDENTITY`
    - Update functions và stored procedures syntax
-   
 3. Import vào PostgreSQL trên Render:
    - Connect vào database qua External Database URL
    - Run SQL script
@@ -126,12 +127,15 @@ docker-compose up --build
 ## 📝 Lưu ý quan trọng
 
 ### 1. SSL Mode cho PostgreSQL
+
 Connection string phải có `SSL Mode=Require` khi connect tới Render PostgreSQL:
+
 ```
 Host=xxx.oregon-postgres.render.com;Port=5432;Database=snapdi_db;Username=snapdi_user;Password=xxx;SSL Mode=Require;Trust Server Certificate=true
 ```
 
 ### 2. Free Plan Limitations
+
 - Database: 1GB storage, 90 ngày auto-delete nếu không active
 - Web Service: Tự động sleep sau 15 phút không hoạt động
 - Cold start: Mất 30-60 giây khi wake up từ sleep
@@ -140,18 +144,19 @@ Host=xxx.oregon-postgres.render.com;Port=5432;Database=snapdi_db;Username=snapdi
 
 Một số điểm khác biệt quan trọng:
 
-| SQL Server | PostgreSQL |
-|------------|------------|
-| `NVARCHAR(MAX)` | `TEXT` hoặc `VARCHAR` |
-| `DATETIME` | `TIMESTAMP` |
-| `BIT` | `BOOLEAN` |
-| `IDENTITY(1,1)` | `SERIAL` hoặc `GENERATED ALWAYS AS IDENTITY` |
-| Case-insensitive | Case-sensitive (default) |
-| `GETDATE()` | `NOW()` hoặc `CURRENT_TIMESTAMP` |
+| SQL Server       | PostgreSQL                                   |
+| ---------------- | -------------------------------------------- |
+| `NVARCHAR(MAX)`  | `TEXT` hoặc `VARCHAR`                        |
+| `DATETIME`       | `TIMESTAMP`                                  |
+| `BIT`            | `BOOLEAN`                                    |
+| `IDENTITY(1,1)`  | `SERIAL` hoặc `GENERATED ALWAYS AS IDENTITY` |
+| Case-insensitive | Case-sensitive (default)                     |
+| `GETDATE()`      | `NOW()` hoặc `CURRENT_TIMESTAMP`             |
 
 ### 4. Entity Framework Core
 
 Code hiện tại đã support cả 2 database:
+
 ```csharp
 // Tự động detect PostgreSQL hoặc SQL Server based on connection string
 var isPostgreSQL = connectionString?.Contains("Host=") ?? false;
@@ -169,18 +174,22 @@ else
 ## 🐛 Troubleshooting
 
 ### Build Failed
+
 - Kiểm tra Dockerfile path đúng chưa
 - Xem logs để biết lỗi cụ thể
 
 ### Cannot connect to database
+
 - Kiểm tra CONNECTION_STRING có đúng không (Internal URL cho web service)
 - Kiểm tra database đã được tạo chưa
 
-### Application Error 
+### Application Error
+
 - Xem logs trong Render Dashboard
 - Kiểm tra environment variables đã đủ chưa
 
 ### Migration Issues
+
 - Xem các migration hiện tại: `dotnet ef migrations list`
 - Remove migration nếu cần: `dotnet ef migrations remove`
 - Tạo migration mới cho PostgreSQL
@@ -188,6 +197,7 @@ else
 ## 📞 Support
 
 Nếu gặp vấn đề, check:
+
 1. Render Dashboard > Logs
 2. Render Dashboard > Events
 3. PostgreSQL Database > Connections

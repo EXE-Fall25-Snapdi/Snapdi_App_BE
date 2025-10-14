@@ -4,7 +4,7 @@
 
 ✔️ Tạo nhánh `test-deploy` từ nhánh `kietnt`  
 ✔️ Commit tất cả thay đổi về Docker và PostgreSQL  
-✔️ Push lên GitHub repository  
+✔️ Push lên GitHub repository
 
 **Branch**: `test-deploy`  
 **Commit**: feat: Add Docker and PostgreSQL support for Render deployment
@@ -20,6 +20,7 @@
 ## 📋 Files đã commit (15 files)
 
 ### Mới thêm:
+
 1. ✅ `RENDER_DEPLOYMENT_GUIDE.md` - Hướng dẫn deploy lên Render
 2. ✅ `SETUP_SUMMARY.md` - Tổng hợp tất cả thay đổi
 3. ✅ `Snapdi/.env.example` - Template environment variables
@@ -33,6 +34,7 @@
 11. ✅ `setup.ps1` - Quick setup wizard
 
 ### Đã cập nhật:
+
 12. ✅ `Snapdi/.gitignore` - Ignore Docker files
 13. ✅ `Snapdi/Snapdi.Api/Program.cs` - Auto-detect database type
 14. ✅ `Snapdi/Snapdi.Api/Snapdi.Api.csproj` - Add Npgsql packages
@@ -204,21 +206,27 @@ https://snapdi-api-test.onrender.com/api/health/detailed
 ### 🐛 Troubleshooting
 
 #### Build Failed
+
 **Check:**
+
 - Logs tab for specific errors
 - Dockerfile path: `./Dockerfile`
 - Root directory: `Snapdi_App_BE/Snapdi`
 - Branch: `test-deploy`
 
 #### Application Error
+
 **Check:**
+
 - All environment variables are set
 - CONNECTION_STRING format is correct (PostgreSQL format)
 - JWT_KEY is at least 32 characters
 - Logs for specific error messages
 
 #### Database Connection Failed
+
 **Check:**
+
 - Using **Internal Database URL** (not External)
 - Database is in same region as web service
 - Connection string includes SSL mode
@@ -259,7 +267,7 @@ git push origin test-deploy
 ## 🔗 Useful Links
 
 - **Render Dashboard**: https://dashboard.render.com
-- **Documentation**: 
+- **Documentation**:
   - [DOCKER_GUIDE.md](./Snapdi/DOCKER_GUIDE.md)
   - [RENDER_DEPLOYMENT_GUIDE.md](./RENDER_DEPLOYMENT_GUIDE.md)
   - [DEPLOYMENT_CHECKLIST.md](./Snapdi/DEPLOYMENT_CHECKLIST.md)

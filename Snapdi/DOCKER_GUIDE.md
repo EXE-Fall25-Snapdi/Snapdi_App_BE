@@ -33,6 +33,7 @@ API sẽ chạy tại: **http://localhost:8080**
 Swagger UI: **http://localhost:8080/swagger**
 
 PostgreSQL Database:
+
 - Host: localhost
 - Port: 5432
 - Database: snapdi_db
@@ -134,6 +135,7 @@ dotnet ef migrations list --project ../Snapdi.Repositories
 ### 1. Làm việc với SQL Server (Local Development)
 
 Update `.env`:
+
 ```env
 CONNECTION_STRING=Data Source=.;Initial Catalog=Snapdi_DB_v2u1;Persist Security Info=True;User ID=sa;Password=12345;Encrypt=False
 ```
@@ -141,16 +143,19 @@ CONNECTION_STRING=Data Source=.;Initial Catalog=Snapdi_DB_v2u1;Persist Security 
 ### 2. Test với PostgreSQL (Docker)
 
 Update `.env`:
+
 ```env
 CONNECTION_STRING=Host=localhost;Port=5432;Database=snapdi_db;Username=snapdi_user;Password=snapdi_password_123
 ```
 
 Start PostgreSQL:
+
 ```bash
 docker-compose up postgres -d
 ```
 
 Run API từ Visual Studio hoặc:
+
 ```bash
 cd Snapdi.Api
 dotnet run
@@ -167,6 +172,7 @@ docker-compose up --build
 API có health check endpoint tại: `/health` (nếu đã implement)
 
 Check PostgreSQL health:
+
 ```bash
 docker-compose exec postgres pg_isready -U snapdi_user
 ```
@@ -181,16 +187,17 @@ Nếu port 8080 hoặc 5432 đã được sử dụng, edit `docker-compose.yml`
 services:
   postgres:
     ports:
-      - "5433:5432"  # Đổi sang port khác
-  
+      - "5433:5432" # Đổi sang port khác
+
   api:
     ports:
-      - "8081:8080"  # Đổi sang port khác
+      - "8081:8080" # Đổi sang port khác
 ```
 
 ### Cannot connect to database
 
 Kiểm tra:
+
 1. PostgreSQL container đã running chưa: `docker-compose ps`
 2. Logs của database: `docker-compose logs postgres`
 3. Connection string đúng chưa
@@ -212,15 +219,15 @@ docker-compose up
 
 Các biến environment quan trọng:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CONNECTION_STRING` | Database connection string | PostgreSQL local |
-| `JWT_KEY` | JWT signing key (min 32 chars) | - |
-| `JWT_ISSUER` | JWT token issuer | SnapdiAPI |
-| `JWT_AUDIENCE` | JWT token audience | SnapdiClient |
-| `JWT_EXPIRATION_HOURS` | Token expiration time | 24 |
-| `APP_BASE_URL` | Application base URL | http://localhost:8080 |
-| `ASPNETCORE_ENVIRONMENT` | Environment name | Development |
+| Variable                 | Description                    | Default               |
+| ------------------------ | ------------------------------ | --------------------- |
+| `CONNECTION_STRING`      | Database connection string     | PostgreSQL local      |
+| `JWT_KEY`                | JWT signing key (min 32 chars) | -                     |
+| `JWT_ISSUER`             | JWT token issuer               | SnapdiAPI             |
+| `JWT_AUDIENCE`           | JWT token audience             | SnapdiClient          |
+| `JWT_EXPIRATION_HOURS`   | Token expiration time          | 24                    |
+| `APP_BASE_URL`           | Application base URL           | http://localhost:8080 |
+| `ASPNETCORE_ENVIRONMENT` | Environment name               | Development           |
 
 ## 🔐 Security Notes
 
@@ -255,6 +262,7 @@ docker system prune -a --volumes
 Xem file `RENDER_DEPLOYMENT_GUIDE.md` để deploy lên Render.
 
 Các platform khác:
+
 - **AWS ECS**: Use the Dockerfile
 - **Azure Container Apps**: Use the Dockerfile
 - **Google Cloud Run**: Use the Dockerfile
@@ -264,6 +272,7 @@ Các platform khác:
 ## 📞 Support
 
 Nếu gặp vấn đề:
+
 1. Xem logs: `docker-compose logs -f`
 2. Check health: `docker-compose ps`
 3. Restart services: `docker-compose restart`
