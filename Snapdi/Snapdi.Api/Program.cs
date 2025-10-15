@@ -39,6 +39,18 @@ var jwtExpirationHours = Environment.GetEnvironmentVariable("JWT_EXPIRATION_HOUR
 var appBaseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL") ?? 
                 builder.Configuration["App:BaseUrl"];
 
+var cloudinaryCloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME") ?? 
+                         builder.Configuration["Cloudinary:CloudName"];
+
+var cloudinaryApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY") ?? 
+                      builder.Configuration["Cloudinary:ApiKey"];
+
+var cloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET") ?? 
+                         builder.Configuration["Cloudinary:ApiSecret"];
+
+var cloudinaryUploadPreset = Environment.GetEnvironmentVariable("CLOUDINARY_UPLOAD_PRESET") ?? 
+                            builder.Configuration["Cloudinary:UploadPreset"] ?? "snapdi_default";
+
 // Validate required configuration
 if (string.IsNullOrEmpty(jwtKey))
 {
@@ -119,9 +131,19 @@ builder.Services.Configure<EmailSettings>(options =>
 builder.Services.Configure<JwtSettings>(options =>
 {
     options.Key = jwtKey;
-    options.Issuer = jwtIssuer;
-    options.Audience = jwtAudience;
+    options.Issuer = jwtIssuer ?? "";
+    options.Audience = jwtAudience ?? "";
     options.ExpirationHours = int.Parse(jwtExpirationHours ?? "1");
+});
+
+builder.Services.Configure<CloudinarySettings>(options =>
+{
+    options.CloudName = cloudinaryCloudName ?? "";
+    options.ApiKey = cloudinaryApiKey ?? "";
+    options.ApiSecret = cloudinaryApiSecret ?? "";
+    options.UploadPreset = cloudinaryUploadPreset;
+    options.FolderPath = "snapdi";
+    options.UseSignedUpload = true;
 });
 
 // Register repositories
@@ -141,6 +163,7 @@ builder.Services.AddScoped<IKeywordService, KeywordService>();
 builder.Services.AddScoped<IPhotoPortfolioService, PhotoPortfolioService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
