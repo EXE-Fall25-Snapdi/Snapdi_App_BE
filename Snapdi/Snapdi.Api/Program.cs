@@ -1,15 +1,16 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.SignalR;
 using Snapdi.Api.Services;
 using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
 using Snapdi.Services.Interfaces;
+using Snapdi.Services.Interfaces.Snapdi.Services.Interfaces;
 using Snapdi.Services.Models;
 using Snapdi.Services.Services;
 using System.Text;
@@ -129,6 +130,8 @@ builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 builder.Services.AddScoped<IPhotographerProfileRepository, PhotographerProfileRepository>();
 builder.Services.AddScoped<IPhotoPortfolioRepository, PhotoPortfolioRepository>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -137,6 +140,7 @@ builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IKeywordService, KeywordService>();
 builder.Services.AddScoped<IPhotoPortfolioService, PhotoPortfolioService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
