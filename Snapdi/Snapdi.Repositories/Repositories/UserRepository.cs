@@ -10,6 +10,13 @@ namespace Snapdi.Repositories.Repositories
         public UserRepository(SnapdiDbV2Context context) : base(context)
         {
         }
+        public async Task<User?> GetAdminUserAsync()
+        {
+            return await _context.Users
+                .Include(u => u.Role)
+                .Where(u => u.Role.RoleName == "ADMIN")
+                .FirstOrDefaultAsync();
+        }
 
         public async Task<User?> GetByEmailAsync(string email)
         {

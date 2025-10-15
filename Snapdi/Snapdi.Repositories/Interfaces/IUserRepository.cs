@@ -4,6 +4,7 @@ namespace Snapdi.Repositories.Interfaces
 {
     public interface IUserRepository : IBaseRepository<User>
     {
+        Task<User?> GetAdminUserAsync();
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByPhoneAsync(string phone);
         Task<User?> GetByEmailOrPhoneAsync(string emailOrPhone);
