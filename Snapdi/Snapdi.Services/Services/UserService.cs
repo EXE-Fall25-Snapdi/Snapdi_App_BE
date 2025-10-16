@@ -11,17 +11,20 @@ namespace Snapdi.Services.Services
         private readonly IEmailService _emailService;
         private readonly IPhotographerProfileRepository _photographerProfileRepository;
         private readonly IVerificationCodeService _verificationCodeService;
+        private readonly IPhotoPortfolioRepository _photoPortfolioRepository;
 
         public UserService(
-            IUserRepository userRepository, 
-            IEmailService emailService, 
+            IUserRepository userRepository,
+            IEmailService emailService,
             IPhotographerProfileRepository photographerProfileRepository,
-            IVerificationCodeService verificationCodeService)
+            IVerificationCodeService verificationCodeService,
+            IPhotoPortfolioRepository photoPortfolioRepository)
         {
             _userRepository = userRepository;
             _emailService = emailService;
             _photographerProfileRepository = photographerProfileRepository;
             _verificationCodeService = verificationCodeService;
+            _photoPortfolioRepository = photoPortfolioRepository;
         }
 
         public async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -156,6 +159,7 @@ namespace Snapdi.Services.Services
                 YearsOfExperience = createPhotographerDto.YearsOfExperience,
                 EquipmentDescription = createPhotographerDto.EquipmentDescription,
                 Description = createPhotographerDto.Description,
+                LevelPhotographer = null, // Always null on registration - only admin can set this
                 IsAvailable = createPhotographerDto.IsAvailable,
                 AvgRating = 0.0 // Initial rating
             };
@@ -168,7 +172,7 @@ namespace Snapdi.Services.Services
 
             // Reload user with complete information
             var userWithPhotographer = await _userRepository.GetUserWithPhotographerProfileAsync(createdUser.UserId);
-            
+
             return MapToUserWithPhotographerDto(userWithPhotographer!);
         }
 
@@ -176,7 +180,7 @@ namespace Snapdi.Services.Services
         {
             // Handle null sortDirection by providing default
             var sortDirection = string.IsNullOrEmpty(filterDto.SortDirection) ? "asc" : filterDto.SortDirection;
-            
+
             var (users, totalCount) = await _userRepository.GetUsersWithFilterAsync(
                 filterDto.Page,
                 filterDto.PageSize,
@@ -405,6 +409,159 @@ namespace Snapdi.Services.Services
             return await SendVerificationCodeAsync(email);
         }
 
+        public async Task<IEnumerable<UserWithPhotographerDto>> GetPhotographersPendingLevelAssignmentAsync()
+        {
+            var photographers = await _userRepository.GetPhotographersPendingLevelAssignmentAsync();
+            return photographers.Select(MapToUserWithPhotographerDto);
+        }
+
+        public async Task<PhotograhpersPendingLevelResponseDto> GetPhotographersPendingLevelAssignmentGroupedAsync()
+        {
+            var photographers = await _userRepository.GetPhotographersPendingLevelAssignmentAsync();
+            var photographerDtos = photographers.Select(MapToUserWithPhotographerDto).ToList();
+
+            var response = new PhotograhpersPendingLevelResponseDto();
+
+            foreach (var photographer in photographerDtos)
+            {
+                // Check if photographer has any portfolio photos
+                if (photographer.PhotoPortfolios != null && photographer.PhotoPortfolios.Any())
+                {
+                    response.WithPortfolio.Add(photographer);
+                }
+                else
+                {
+                    response.WithoutPortfolio.Add(photographer);
+                }
+            }
+
+            // Sort by creation date (newest first) within each group
+            response.WithPortfolio = response.WithPortfolio.OrderByDescending(p => p.CreatedAt).ToList();
+            response.WithoutPortfolio = response.WithoutPortfolio.OrderByDescending(p => p.CreatedAt).ToList();
+
+            return response;
+        }
+
+        public async Task<PhotograhpersPendingLevelPagedResponseDto> GetPhotographersPendingLevelAssignmentPagedAsync(GetPhotographersPendingLevelRequestDto request)
+        {
+            // Validate pagination parameters
+            var page = Math.Max(1, request.Page);
+            var pageSize = Math.Clamp(request.PageSize, 1, 50);
+
+            var (withPortfolioUsers, withoutPortfolioUsers, withPortfolioTotalCount, withoutPortfolioTotalCount) =
+                await _userRepository.GetPhotographersPendingLevelAssignmentPagedAsync(
+                    page,
+                    pageSize,
+                    request.SearchTerm,
+                    request.HasPortfolio,
+                    request.LocationCity,
+                    request.SortBy,
+                    request.SortDirection,
+                    request.CreatedFrom,
+                    request.CreatedTo
+                );
+
+            // Map to DTOs
+            var withPortfolioDtos = withPortfolioUsers.Select(MapToUserWithPhotographerDto).ToList();
+            var withoutPortfolioDtos = withoutPortfolioUsers.Select(MapToUserWithPhotographerDto).ToList();
+
+            // Calculate pagination info
+            var withPortfolioTotalPages = (int)Math.Ceiling((double)withPortfolioTotalCount / pageSize);
+            var withoutPortfolioTotalPages = (int)Math.Ceiling((double)withoutPortfolioTotalCount / pageSize);
+
+            var response = new PhotograhpersPendingLevelPagedResponseDto
+            {
+                WithPortfolio = new PagedResultDto<UserWithPhotographerDto>
+                {
+                    Items = withPortfolioDtos,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalItems = withPortfolioTotalCount,
+                    TotalPages = withPortfolioTotalPages
+                },
+                WithoutPortfolio = new PagedResultDto<UserWithPhotographerDto>
+                {
+                    Items = withoutPortfolioDtos,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalItems = withoutPortfolioTotalCount,
+                    TotalPages = withoutPortfolioTotalPages
+                },
+                Summary = new PhotographersPendingLevelSummaryDto
+                {
+                    WithPortfolioCount = withPortfolioTotalCount,
+                    WithoutPortfolioCount = withoutPortfolioTotalCount
+                }
+            };
+
+            return response;
+        }
+
+        public async Task<bool> UpdatePhotographerLevelAsync(int userId, string levelPhotographer)
+        {
+            try
+            {
+                await _userRepository.UpdatePhotographerLevelAsync(userId, levelPhotographer);
+                await _userRepository.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<IEnumerable<PhotoPortfolioDto>> GetPhotoPortfoliosByUserIdAsync(int userId)
+        {
+            // Verify user exists
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return Enumerable.Empty<PhotoPortfolioDto>();
+            }
+
+            var portfolios = await _photoPortfolioRepository.GetByUserIdAsync(userId);
+            return portfolios.Select(p => new PhotoPortfolioDto
+            {
+                PhotoPortfolioId = p.PhotoPortfolioId,
+                UserId = p.UserId,
+                PhotoUrl = p.PhotoUrl
+            });
+        }
+
+        public async Task<PhotographerSearchResultDto> SearchPhotographersAsync(PhotographerSearchDto searchDto)
+        {
+            var (photographers, totalCount) = await _userRepository.SearchPhotographersAsync(
+                searchDto.PageNumber,
+                searchDto.PageSize,
+                searchDto.SearchTerm,
+                searchDto.LocationCity,
+                searchDto.LevelPhotographer,
+                searchDto.IsAvailable,
+                searchDto.IsVerify,
+                searchDto.IsActive,
+                searchDto.MinRating,
+                searchDto.MaxRating,
+                searchDto.YearsOfExperience,
+                searchDto.HasPortfolio,
+                searchDto.CreatedFrom,
+                searchDto.CreatedTo,
+                searchDto.SortBy,
+                searchDto.SortDirection
+            );
+
+            var photographerDtos = photographers.Select(MapToUserWithPhotographerDto).ToList();
+
+
+            return new PhotographerSearchResultDto
+            {
+                Data = photographerDtos,
+                TotalRecords = totalCount,
+                PageNumber = searchDto.PageNumber,
+                PageSize = searchDto.PageSize,
+            };
+        }
+
         #region Private Methods
 
         private static UserDto MapToUserDto(User user)
@@ -454,7 +611,8 @@ namespace Snapdi.Services.Services
                     YearsOfExperience = user.PhotographerProfile.YearsOfExperience,
                     AvgRating = user.PhotographerProfile.AvgRating,
                     IsAvailable = user.PhotographerProfile.IsAvailable,
-                    Description = user.PhotographerProfile.Description
+                    Description = user.PhotographerProfile.Description,
+                    LevelPhotographer = user.PhotographerProfile.LevelPhotographer
                 };
             }
 

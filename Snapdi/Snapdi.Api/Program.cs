@@ -1,5 +1,6 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -10,6 +11,7 @@ using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
 using Snapdi.Services.Interfaces;
+using Snapdi.Services.Interfaces.Snapdi.Services.Interfaces;
 using Snapdi.Services.Models;
 using Snapdi.Services.Services;
 using System.Text;
@@ -37,6 +39,18 @@ var jwtExpirationHours = Environment.GetEnvironmentVariable("JWT_EXPIRATION_HOUR
 
 var appBaseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL") ?? 
                 builder.Configuration["App:BaseUrl"];
+
+var cloudinaryCloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME") ?? 
+                         builder.Configuration["Cloudinary:CloudName"];
+
+var cloudinaryApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY") ?? 
+                      builder.Configuration["Cloudinary:ApiKey"];
+
+var cloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET") ?? 
+                         builder.Configuration["Cloudinary:ApiSecret"];
+
+var cloudinaryUploadPreset = Environment.GetEnvironmentVariable("CLOUDINARY_UPLOAD_PRESET") ?? 
+                            builder.Configuration["Cloudinary:UploadPreset"] ?? "snapdi_default";
 
 // Validate required configuration
 if (string.IsNullOrEmpty(jwtKey))
@@ -82,6 +96,21 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+
+    // Allow JWT over WebSockets for SignalR using access_token query string
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // Add DbContext
@@ -107,9 +136,19 @@ builder.Services.Configure<EmailSettings>(options =>
 builder.Services.Configure<JwtSettings>(options =>
 {
     options.Key = jwtKey;
-    options.Issuer = jwtIssuer;
-    options.Audience = jwtAudience;
+    options.Issuer = jwtIssuer ?? "";
+    options.Audience = jwtAudience ?? "";
     options.ExpirationHours = int.Parse(jwtExpirationHours ?? "1");
+});
+
+builder.Services.Configure<CloudinarySettings>(options =>
+{
+    options.CloudName = cloudinaryCloudName ?? "";
+    options.ApiKey = cloudinaryApiKey ?? "";
+    options.ApiSecret = cloudinaryApiSecret ?? "";
+    options.UploadPreset = cloudinaryUploadPreset;
+    options.FolderPath = "snapdi";
+    options.UseSignedUpload = true;
 });
 
 // Register repositories
@@ -117,16 +156,25 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 builder.Services.AddScoped<IPhotographerProfileRepository, PhotographerProfileRepository>();
+builder.Services.AddScoped<IPhotoPortfolioRepository, PhotoPortfolioRepository>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IKeywordService, KeywordService>();
+builder.Services.AddScoped<IPhotoPortfolioService, PhotoPortfolioService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
+
+// SignalR for realtime features
+builder.Services.AddSignalR();
 
 // Configure Swagger/OpenAPI with JWT authentication
 builder.Services.AddEndpointsApiExplorer();
@@ -209,5 +257,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map SignalR hubs
+app.MapHub<Snapdi.Api.Hubs.ChatHub>("/hubs/chat");
 
 app.Run();

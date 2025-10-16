@@ -147,7 +147,7 @@ namespace Snapdi.Api.Controllers
         ///         "yearsOfExperience": "5 years",
         ///         "equipmentDescription": "Canon EOS R5, Sony A7R IV, various lenses",
         ///         "description": "Professional wedding and portrait photographer",
-        ///         "isAvailable": true,
+        ///         "isAvailable": false,
         ///         "avatarUrl": "https://example.com/avatar.jpg"
         ///     }
         /// 

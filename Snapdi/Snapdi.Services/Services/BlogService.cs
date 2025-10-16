@@ -102,6 +102,38 @@ namespace Snapdi.Services.Services
             };
         }
 
+        public async Task<PagedResult<BlogDto>> SearchBlogsAsync(BlogSearchDto searchDto)
+        {
+            // Validate and sanitize search parameters
+            if (searchDto.PageNumber < 1) searchDto.PageNumber = 1;
+            if (searchDto.PageSize < 1 || searchDto.PageSize > 100) searchDto.PageSize = 10;
+
+            // Map BlogSearchDto to BlogSearchParameters
+            var searchParameters = new BlogSearchParameters
+            {
+                SearchTerm = searchDto.SearchTerm,
+                AuthorId = searchDto.AuthorId,
+                Keywords = searchDto.Keywords,
+                KeywordIds = searchDto.KeywordIds,
+                IsActive = searchDto.IsActive,
+                DateFrom = searchDto.DateFrom,
+                DateTo = searchDto.DateTo,
+                PageNumber = searchDto.PageNumber,
+                PageSize = searchDto.PageSize
+            };
+
+            var blogs = await _blogRepository.SearchBlogsAsync(searchParameters);
+            var totalCount = await _blogRepository.GetSearchBlogsCountAsync(searchParameters);
+
+            return new PagedResult<BlogDto>
+            {
+                Data = blogs.Select(MapToDto).ToList(),
+                TotalRecords = totalCount,
+                PageNumber = searchDto.PageNumber,
+                PageSize = searchDto.PageSize
+            };
+        }
+
         public async Task<BlogDto> CreateBlogAsync(CreateBlogDto createBlogDto)
         {
             var blog = new Blog

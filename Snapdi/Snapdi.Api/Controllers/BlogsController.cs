@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
@@ -25,6 +26,95 @@ namespace Snapdi.Api.Controllers
             {
                 var blogs = await _blogService.GetAllBlogsAsync();
                 return Ok(blogs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Search blogs with advanced filtering
+        /// </summary>
+        [HttpGet("search")]
+        public async Task<ActionResult<PagedResult<BlogDto>>> SearchBlogs(
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] int? authorId = null,
+            [FromQuery] string? keywords = null,
+            [FromQuery] string? keywordIds = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] DateTime? dateFrom = null,
+            [FromQuery] DateTime? dateTo = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                if (pageNumber < 1) pageNumber = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 10;
+
+                var searchDto = new BlogSearchDto
+                {
+                    SearchTerm = searchTerm,
+                    AuthorId = authorId,
+                    IsActive = isActive,
+                    DateFrom = dateFrom,
+                    DateTo = dateTo,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                // Parse keywords (comma-separated string)
+                if (!string.IsNullOrWhiteSpace(keywords))
+                {
+                    searchDto.Keywords = keywords.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                               .Select(k => k.Trim())
+                                               .Where(k => !string.IsNullOrEmpty(k))
+                                               .ToList();
+                }
+
+                // Parse keyword IDs (comma-separated string)
+                if (!string.IsNullOrWhiteSpace(keywordIds))
+                {
+                    var keywordIdList = new List<int>();
+                    var keywordIdStrings = keywordIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    
+                    foreach (var idString in keywordIdStrings)
+                    {
+                        if (int.TryParse(idString.Trim(), out var id))
+                        {
+                            keywordIdList.Add(id);
+                        }
+                    }
+                    
+                    if (keywordIdList.Any())
+                    {
+                        searchDto.KeywordIds = keywordIdList;
+                    }
+                }
+
+                var result = await _blogService.SearchBlogsAsync(searchDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Advanced search blogs with POST body
+        /// </summary>
+        [HttpPost("search")]
+        public async Task<ActionResult<PagedResult<BlogDto>>> SearchBlogsAdvanced([FromBody] BlogSearchDto searchDto)
+        {
+            try
+            {
+                if (searchDto.PageNumber < 1) searchDto.PageNumber = 1;
+                if (searchDto.PageSize < 1 || searchDto.PageSize > 100) searchDto.PageSize = 10;
+
+                var result = await _blogService.SearchBlogsAsync(searchDto);
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -116,6 +206,7 @@ namespace Snapdi.Api.Controllers
         /// Get blogs by author ID
         /// </summary>
         [HttpGet("author/{authorId}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<BlogDto>>> GetBlogsByAuthor(int authorId)
         {
             try
@@ -133,6 +224,7 @@ namespace Snapdi.Api.Controllers
         /// Get blogs by author ID with paging
         /// </summary>
         [HttpGet("author/{authorId}/paged")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<PagedResult<BlogDto>>> GetBlogsByAuthorPaged(int authorId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             try
@@ -154,6 +246,7 @@ namespace Snapdi.Api.Controllers
         /// Get blogs by keyword ID
         /// </summary>
         [HttpGet("keyword/{keywordId}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<BlogDto>>> GetBlogsByKeyword(int keywordId)
         {
             try
@@ -171,6 +264,7 @@ namespace Snapdi.Api.Controllers
         /// Get blogs by keyword ID with paging
         /// </summary>
         [HttpGet("keyword/{keywordId}/paged")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<PagedResult<BlogDto>>> GetBlogsByKeywordPaged(int keywordId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             try
@@ -192,6 +286,7 @@ namespace Snapdi.Api.Controllers
         /// Create a new blog
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<BlogDto>> CreateBlog([FromBody] CreateBlogDto createBlogDto)
         {
             try
@@ -214,6 +309,7 @@ namespace Snapdi.Api.Controllers
         /// Update an existing blog
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<BlogDto>> UpdateBlog(int id, [FromBody] UpdateBlogDto updateBlogDto)
         {
             try
@@ -241,6 +337,7 @@ namespace Snapdi.Api.Controllers
         /// Delete a blog
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteBlog(int id)
         {
             try
@@ -263,6 +360,7 @@ namespace Snapdi.Api.Controllers
         /// Add a keyword to a blog
         /// </summary>
         [HttpPost("{blogId}/keywords/{keywordId}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> AddKeywordToBlog(int blogId, int keywordId)
         {
             try
@@ -285,6 +383,7 @@ namespace Snapdi.Api.Controllers
         /// Remove a keyword from a blog
         /// </summary>
         [HttpDelete("{blogId}/keywords/{keywordId}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> RemoveKeywordFromBlog(int blogId, int keywordId)
         {
             try
@@ -307,6 +406,7 @@ namespace Snapdi.Api.Controllers
         /// Add multiple keywords to a blog by keyword IDs
         /// </summary>
         [HttpPost("{blogId}/keywords")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> AddKeywordsToBlog(int blogId, [FromBody] List<int> keywordIds)
         {
             try
@@ -334,6 +434,7 @@ namespace Snapdi.Api.Controllers
         /// Add multiple keywords to a blog by keyword names
         /// </summary>
         [HttpPost("{blogId}/keywords/by-names")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> AddKeywordsToBlogByNames(int blogId, [FromBody] List<string> keywordNames)
         {
             try
@@ -361,6 +462,7 @@ namespace Snapdi.Api.Controllers
         /// Update all keywords for a blog by IDs
         /// </summary>
         [HttpPut("{blogId}/keywords")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> UpdateBlogKeywords(int blogId, [FromBody] List<int> keywordIds)
         {
             try
@@ -388,6 +490,7 @@ namespace Snapdi.Api.Controllers
         /// Update all keywords for a blog by names
         /// </summary>
         [HttpPut("{blogId}/keywords/by-names")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> UpdateBlogKeywordsByNames(int blogId, [FromBody] List<string> keywordNames)
         {
             try

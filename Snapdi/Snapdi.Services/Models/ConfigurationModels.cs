@@ -22,4 +22,14 @@ namespace Snapdi.Services.Models
         public string Audience { get; set; } = string.Empty;
         public int ExpirationHours { get; set; } = 1;
     }
+
+    public class CloudinarySettings
+    {
+        public string CloudName { get; set; } = string.Empty;
+        public string ApiKey { get; set; } = string.Empty;
+        public string ApiSecret { get; set; } = string.Empty;
+        public string UploadPreset { get; set; } = "snapdi_default";
+        public string FolderPath { get; set; } = "snapdi";
+        public bool UseSignedUpload { get; set; } = true;
+    }
 }

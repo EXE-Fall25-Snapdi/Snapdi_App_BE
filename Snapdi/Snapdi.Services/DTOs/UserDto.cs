@@ -15,4 +15,10 @@ namespace Snapdi.Services.DTOs
         public string? LocationCity { get; set; }
         public string? AvatarUrl { get; set; }
     }
+
+    public class UpdateUserStatusDto
+    {
+        public bool IsActive { get; set; }
+        public bool IsVerify { get; set; }
+    }
 }

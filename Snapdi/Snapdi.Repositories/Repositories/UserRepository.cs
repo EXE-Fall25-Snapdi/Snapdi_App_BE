@@ -10,6 +10,13 @@ namespace Snapdi.Repositories.Repositories
         public UserRepository(SnapdiDbV2Context context) : base(context)
         {
         }
+        public async Task<User?> GetAdminUserAsync()
+        {
+            return await _context.Users
+                .Include(u => u.Role)
+                .Where(u => u.Role.RoleName == "ADMIN")
+                .FirstOrDefaultAsync();
+        }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
@@ -230,6 +237,287 @@ namespace Snapdi.Repositories.Repositories
                 .ToListAsync();
 
             return (users, totalCount);
+        }
+
+        public async Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync()
+        {
+            const int PHOTOGRAPHER_ROLE_ID = 3;
+            
+            return await _context.Users
+                .Include(u => u.Role)
+                .Include(u => u.PhotographerProfile)
+                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
+                           u.IsVerify == true && 
+                           u.PhotographerProfile != null && 
+                           u.PhotographerProfile.IsAvailable == false && 
+                           (u.PhotographerProfile.LevelPhotographer == null || u.PhotographerProfile.LevelPhotographer == ""))
+                .ToListAsync();
+        }
+
+        public async Task<(IEnumerable<User> WithPortfolio, IEnumerable<User> WithoutPortfolio, int WithPortfolioTotalCount, int WithoutPortfolioTotalCount)> 
+            GetPhotographersPendingLevelAssignmentPagedAsync(
+                int page,
+                int pageSize,
+                string? searchTerm = null,
+                bool? hasPortfolio = null,
+                string? locationCity = null,
+                string? sortBy = "createdAt",
+                string? sortDirection = "desc",
+                DateTime? createdFrom = null,
+                DateTime? createdTo = null)
+        {
+            const int PHOTOGRAPHER_ROLE_ID = 3;
+            
+            // Base query for photographers pending level assignment
+            var baseQuery = _context.Users
+                .Include(u => u.Role)
+                .Include(u => u.PhotographerProfile)
+                .Include(u => u.PhotoPortfolios)
+                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
+                           u.IsVerify == true && 
+                           u.PhotographerProfile != null && 
+                           u.PhotographerProfile.IsAvailable == false && 
+                           (u.PhotographerProfile.LevelPhotographer == null || u.PhotographerProfile.LevelPhotographer == ""));
+
+            // Apply common filters
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var searchLower = searchTerm.ToLower();
+                baseQuery = baseQuery.Where(u => 
+                    u.Name.ToLower().Contains(searchLower) || 
+                    u.Email.ToLower().Contains(searchLower));
+            }
+
+            if (!string.IsNullOrEmpty(locationCity))
+            {
+                baseQuery = baseQuery.Where(u => u.LocationCity != null && u.LocationCity.ToLower().Contains(locationCity.ToLower()));
+            }
+
+            if (createdFrom.HasValue)
+            {
+                baseQuery = baseQuery.Where(u => u.CreatedAt >= createdFrom.Value);
+            }
+
+            if (createdTo.HasValue)
+            {
+                baseQuery = baseQuery.Where(u => u.CreatedAt <= createdTo.Value);
+            }
+
+            // Split into with/without portfolio groups
+            var withPortfolioQuery = baseQuery.Where(u => u.PhotoPortfolios.Any());
+            var withoutPortfolioQuery = baseQuery.Where(u => !u.PhotoPortfolios.Any());
+
+            // Apply portfolio filter if specified
+            IQueryable<User> finalQuery;
+            if (hasPortfolio == true)
+            {
+                finalQuery = withPortfolioQuery;
+                withoutPortfolioQuery = _context.Users.Where(u => false); // Empty query
+            }
+            else if (hasPortfolio == false)
+            {
+                finalQuery = withoutPortfolioQuery;
+                withPortfolioQuery = _context.Users.Where(u => false); // Empty query
+            }
+            else
+            {
+                finalQuery = baseQuery;
+            }
+
+            // Apply sorting to both queries
+            var isDescending = sortDirection?.ToLower() == "desc";
+            
+            if (!string.IsNullOrEmpty(sortBy))
+            {
+                withPortfolioQuery = sortBy.ToLower() switch
+                {
+                    "name" => isDescending ? withPortfolioQuery.OrderByDescending(u => u.Name) : withPortfolioQuery.OrderBy(u => u.Name),
+                    "email" => isDescending ? withPortfolioQuery.OrderByDescending(u => u.Email) : withPortfolioQuery.OrderBy(u => u.Email),
+                    "createdat" => isDescending ? withPortfolioQuery.OrderByDescending(u => u.CreatedAt) : withPortfolioQuery.OrderBy(u => u.CreatedAt),
+                    _ => isDescending ? withPortfolioQuery.OrderByDescending(u => u.CreatedAt) : withPortfolioQuery.OrderBy(u => u.CreatedAt)
+                };
+
+                withoutPortfolioQuery = sortBy.ToLower() switch
+                {
+                    "name" => isDescending ? withoutPortfolioQuery.OrderByDescending(u => u.Name) : withoutPortfolioQuery.OrderBy(u => u.Name),
+                    "email" => isDescending ? withoutPortfolioQuery.OrderByDescending(u => u.Email) : withoutPortfolioQuery.OrderBy(u => u.Email),
+                    "createdat" => isDescending ? withoutPortfolioQuery.OrderByDescending(u => u.CreatedAt) : withoutPortfolioQuery.OrderBy(u => u.CreatedAt),
+                    _ => isDescending ? withoutPortfolioQuery.OrderByDescending(u => u.CreatedAt) : withoutPortfolioQuery.OrderBy(u => u.CreatedAt)
+                };
+            }
+            else
+            {
+                withPortfolioQuery = isDescending ? withPortfolioQuery.OrderByDescending(u => u.CreatedAt) : withPortfolioQuery.OrderBy(u => u.CreatedAt);
+                withoutPortfolioQuery = isDescending ? withoutPortfolioQuery.OrderByDescending(u => u.CreatedAt) : withoutPortfolioQuery.OrderBy(u => u.CreatedAt);
+            }
+
+            // Get total counts
+            var withPortfolioTotalCount = await withPortfolioQuery.CountAsync();
+            var withoutPortfolioTotalCount = await withoutPortfolioQuery.CountAsync();
+
+            // Apply pagination
+            var withPortfolioResults = await withPortfolioQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var withoutPortfolioResults = await withoutPortfolioQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (withPortfolioResults, withoutPortfolioResults, withPortfolioTotalCount, withoutPortfolioTotalCount);
+        }
+
+        public async Task UpdatePhotographerLevelAsync(int userId, string levelPhotographer)
+        {
+            var photographerProfile = await _context.PhotographerProfiles.FindAsync(userId);
+            if (photographerProfile != null)
+            {
+                photographerProfile.LevelPhotographer = levelPhotographer;
+            }
+        }
+
+        public async Task<(IEnumerable<User> Photographers, int TotalCount)> SearchPhotographersAsync(
+            int page,
+            int pageSize,
+            string? searchTerm = null,
+            string? locationCity = null,
+            string? levelPhotographer = null,
+            bool? isAvailable = null,
+            bool? isVerify = null,
+            bool? isActive = null,
+            double? minRating = null,
+            double? maxRating = null,
+            string? yearsOfExperience = null,
+            bool? hasPortfolio = null,
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            string? sortBy = "createdAt",
+            string? sortDirection = "desc")
+        {
+            const int PHOTOGRAPHER_ROLE_ID = 3;
+            
+            var query = _context.Users
+                .Include(u => u.Role)
+                .Include(u => u.PhotographerProfile)
+                .Include(u => u.PhotoPortfolios)
+                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && u.PhotographerProfile != null)
+                .AsQueryable();
+
+            // Apply search term filter
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var searchLower = searchTerm.ToLower();
+                query = query.Where(u => 
+                    u.Name.ToLower().Contains(searchLower) || 
+                    u.Email.ToLower().Contains(searchLower) ||
+                    (u.PhotographerProfile!.Description != null && u.PhotographerProfile.Description.ToLower().Contains(searchLower)));
+            }
+
+            // Apply location filter
+            if (!string.IsNullOrEmpty(locationCity))
+            {
+                query = query.Where(u => u.LocationCity != null && u.LocationCity.ToLower().Contains(locationCity.ToLower()));
+            }
+
+            // Apply photographer level filter
+            if (!string.IsNullOrEmpty(levelPhotographer))
+            {
+                query = query.Where(u => u.PhotographerProfile!.LevelPhotographer != null && 
+                                        u.PhotographerProfile.LevelPhotographer.ToLower() == levelPhotographer.ToLower());
+            }
+
+            // Apply availability filter
+            if (isAvailable.HasValue)
+            {
+                query = query.Where(u => u.PhotographerProfile!.IsAvailable == isAvailable.Value);
+            }
+
+            // Apply verification filter
+            if (isVerify.HasValue)
+            {
+                query = query.Where(u => u.IsVerify == isVerify.Value);
+            }
+
+            // Apply active status filter
+            if (isActive.HasValue)
+            {
+                query = query.Where(u => u.IsActive == isActive.Value);
+            }
+
+            // Apply rating filters
+            if (minRating.HasValue)
+            {
+                query = query.Where(u => u.PhotographerProfile!.AvgRating >= minRating.Value);
+            }
+
+            if (maxRating.HasValue)
+            {
+                query = query.Where(u => u.PhotographerProfile!.AvgRating <= maxRating.Value);
+            }
+
+            // Apply years of experience filter
+            if (!string.IsNullOrEmpty(yearsOfExperience))
+            {
+                query = query.Where(u => u.PhotographerProfile!.YearsOfExperience != null && 
+                                        u.PhotographerProfile.YearsOfExperience.ToLower().Contains(yearsOfExperience.ToLower()));
+            }
+
+            // Apply portfolio filter
+            if (hasPortfolio.HasValue)
+            {
+                if (hasPortfolio.Value)
+                {
+                    query = query.Where(u => u.PhotoPortfolios.Any());
+                }
+                else
+                {
+                    query = query.Where(u => !u.PhotoPortfolios.Any());
+                }
+            }
+
+            // Apply date range filters
+            if (createdFrom.HasValue)
+            {
+                query = query.Where(u => u.CreatedAt >= createdFrom.Value);
+            }
+
+            if (createdTo.HasValue)
+            {
+                query = query.Where(u => u.CreatedAt <= createdTo.Value);
+            }
+
+            // Apply sorting
+            var isDescending = sortDirection?.ToLower() == "desc";
+            
+            if (!string.IsNullOrEmpty(sortBy))
+            {
+                query = sortBy.ToLower() switch
+                {
+                    "name" => isDescending ? query.OrderByDescending(u => u.Name) : query.OrderBy(u => u.Name),
+                    "email" => isDescending ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
+                    "rating" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.AvgRating ?? 0) : query.OrderBy(u => u.PhotographerProfile!.AvgRating ?? 0),
+                    "createdat" => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
+                    "yearsofexperience" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.YearsOfExperience ?? "") : query.OrderBy(u => u.PhotographerProfile!.YearsOfExperience ?? ""),
+                    _ => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt)
+                };
+            }
+            else
+            {
+                query = isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt);
+            }
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
+            var photographers = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (photographers, totalCount);
         }
 
         public override async Task<User?> GetByIdAsync(int id)
