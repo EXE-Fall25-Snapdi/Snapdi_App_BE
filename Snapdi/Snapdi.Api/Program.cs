@@ -100,19 +100,25 @@ builder.Services.AddAuthentication(options =>
 // Add DbContext with support for both SQL Server and PostgreSQL
 //var isPostgreSQL = connectionString?.Contains("Host=") ?? false;
 
+//builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
+//{
+//    //if (isPostgreSQL)
+//    //{
+//        // Use PostgreSQL for Render deployment
+//        options.UseNpgsql(connectionString);
+//    //}
+//    //else
+//    //{     
+//    //    // Use SQL Server for local development
+//    //    options.UseSqlServer(connectionString);
+//    //}
+//});
 builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
-{
-    //if (isPostgreSQL)
-    //{
-        // Use PostgreSQL for Render deployment
-        options.UseNpgsql(connectionString);
-    //}
-    //else
-    //{
-    //    // Use SQL Server for local development
-    //    options.UseSqlServer(connectionString);
-    //}
-});
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure()
+    )
+);
 
 // Configure settings through DI
 builder.Services.Configure<AppSettings>(options =>
