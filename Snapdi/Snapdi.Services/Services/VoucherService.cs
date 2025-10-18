@@ -44,6 +44,8 @@ namespace Snapdi.Services.Services
             };
 
             await _voucherRepository.AddAsync(voucher);
+
+            await _voucherRepository.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(int voucherId)
