@@ -159,6 +159,9 @@ builder.Services.AddScoped<IPhotographerProfileRepository, PhotographerProfileRe
 builder.Services.AddScoped<IPhotoPortfolioRepository, PhotoPortfolioRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
+builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
+builder.Services.AddScoped<IVoucherUsageRepository, VoucherUsageRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -167,6 +170,9 @@ builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IKeywordService, KeywordService>();
 builder.Services.AddScoped<IPhotoPortfolioService, PhotoPortfolioService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
+builder.Services.AddScoped<IVoucherUsageService, VoucherUsageService>();
+//builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<JwtService>();
