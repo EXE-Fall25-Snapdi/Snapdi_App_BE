@@ -4,6 +4,7 @@ namespace Snapdi.Repositories.Interfaces
 {
     public interface IUserRepository : IBaseRepository<User>
     {
+        Task<User?> GetAdminUserAsync();
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByPhoneAsync(string phone);
         Task<User?> GetByEmailOrPhoneAsync(string emailOrPhone);
@@ -35,5 +36,44 @@ namespace Snapdi.Repositories.Interfaces
             string? sortDirection = "asc",
             DateTime? createdFrom = null,
             DateTime? createdTo = null);
+        
+        // Photographer search method
+        Task<(IEnumerable<User> Photographers, int TotalCount)> SearchPhotographersAsync(
+            int page,
+            int pageSize,
+            string? searchTerm = null,
+            string? locationCity = null,
+            string? levelPhotographer = null,
+            bool? isAvailable = null,
+            bool? isVerify = null,
+            bool? isActive = null,
+            double? minRating = null,
+            double? maxRating = null,
+            string? yearsOfExperience = null,
+            bool? hasPortfolio = null,
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            string? sortBy = "createdAt",
+            string? sortDirection = "desc");
+            
+        // Get photographers pending level assignment
+        Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync();
+        
+        // Get photographers pending level assignment with paging and filtering
+        Task<(IEnumerable<User> WithPortfolio, IEnumerable<User> WithoutPortfolio, int WithPortfolioTotalCount, int WithoutPortfolioTotalCount)> 
+            GetPhotographersPendingLevelAssignmentPagedAsync(
+                int page,
+                int pageSize,
+                string? searchTerm = null,
+                bool? hasPortfolio = null,
+                string? locationCity = null,
+                string? sortBy = "createdAt",
+                string? sortDirection = "desc",
+                DateTime? createdFrom = null,
+                DateTime? createdTo = null
+            );
+        
+        // Update photographer level
+        Task UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
     }
 }

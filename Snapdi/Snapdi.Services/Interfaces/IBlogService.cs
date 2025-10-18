@@ -23,5 +23,8 @@ namespace Snapdi.Services.Interfaces
         Task<bool> UpdateBlogKeywordsAsync(int blogId, List<int> keywordIds);
         Task<bool> UpdateBlogKeywordsAsync(int blogId, List<string> keywordNames);
         Task<bool> BlogExistsAsync(int blogId);
+        
+        // Search methods
+        Task<PagedResult<BlogDto>> SearchBlogsAsync(BlogSearchDto searchDto);
     }
 }

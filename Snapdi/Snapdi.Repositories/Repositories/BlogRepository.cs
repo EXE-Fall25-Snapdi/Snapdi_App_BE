@@ -163,6 +163,110 @@ namespace Snapdi.Repositories.Repositories
             return await _dbSet.CountAsync(b => b.Keywords.Any(k => k.KeywordId == keywordId));
         }
 
+        public async Task<IEnumerable<Blog>> SearchBlogsAsync(BlogSearchParameters searchParameters)
+        {
+            var query = _dbSet
+                .Include(b => b.Keywords)
+                .Include(b => b.Author)
+                .AsQueryable();
+
+            // Apply search term filter (search in title and content)
+            if (!string.IsNullOrWhiteSpace(searchParameters.SearchTerm))
+            {
+                var searchTerm = searchParameters.SearchTerm.ToLower();
+                query = query.Where(b => b.Title.ToLower().Contains(searchTerm) || 
+                                       b.Content.ToLower().Contains(searchTerm));
+            }
+
+            // Apply author filter
+            if (searchParameters.AuthorId.HasValue)
+            {
+                query = query.Where(b => b.AuthorId == searchParameters.AuthorId.Value);
+            }
+
+            // Apply active status filter
+            if (searchParameters.IsActive.HasValue)
+            {
+                query = query.Where(b => b.IsActive == searchParameters.IsActive.Value);
+            }
+
+            // Apply date range filters
+            if (searchParameters.DateFrom.HasValue)
+            {
+                query = query.Where(b => b.CreateAt >= searchParameters.DateFrom.Value);
+            }
+
+            if (searchParameters.DateTo.HasValue)
+            {
+                query = query.Where(b => b.CreateAt <= searchParameters.DateTo.Value);
+            }
+
+            // Apply keyword filters
+            if (searchParameters.KeywordIds != null && searchParameters.KeywordIds.Any())
+            {
+                query = query.Where(b => b.Keywords.Any(k => searchParameters.KeywordIds.Contains(k.KeywordId)));
+            }
+
+            if (searchParameters.Keywords != null && searchParameters.Keywords.Any())
+            {
+                var keywordNames = searchParameters.Keywords.Select(k => k.ToLower()).ToList();
+                query = query.Where(b => b.Keywords.Any(k => keywordNames.Contains(k.Keyword1.ToLower())));
+            }
+
+            // Apply pagination and ordering
+            return await query
+                .OrderByDescending(b => b.CreateAt)
+                .Skip((searchParameters.PageNumber - 1) * searchParameters.PageSize)
+                .Take(searchParameters.PageSize)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetSearchBlogsCountAsync(BlogSearchParameters searchParameters)
+        {
+            var query = _dbSet.AsQueryable();
+
+            // Apply same filters as SearchBlogsAsync but without includes for counting
+            if (!string.IsNullOrWhiteSpace(searchParameters.SearchTerm))
+            {
+                var searchTerm = searchParameters.SearchTerm.ToLower();
+                query = query.Where(b => b.Title.ToLower().Contains(searchTerm) || 
+                                       b.Content.ToLower().Contains(searchTerm));
+            }
+
+            if (searchParameters.AuthorId.HasValue)
+            {
+                query = query.Where(b => b.AuthorId == searchParameters.AuthorId.Value);
+            }
+
+            if (searchParameters.IsActive.HasValue)
+            {
+                query = query.Where(b => b.IsActive == searchParameters.IsActive.Value);
+            }
+
+            if (searchParameters.DateFrom.HasValue)
+            {
+                query = query.Where(b => b.CreateAt >= searchParameters.DateFrom.Value);
+            }
+
+            if (searchParameters.DateTo.HasValue)
+            {
+                query = query.Where(b => b.CreateAt <= searchParameters.DateTo.Value);
+            }
+
+            if (searchParameters.KeywordIds != null && searchParameters.KeywordIds.Any())
+            {
+                query = query.Where(b => b.Keywords.Any(k => searchParameters.KeywordIds.Contains(k.KeywordId)));
+            }
+
+            if (searchParameters.Keywords != null && searchParameters.Keywords.Any())
+            {
+                var keywordNames = searchParameters.Keywords.Select(k => k.ToLower()).ToList();
+                query = query.Where(b => b.Keywords.Any(k => keywordNames.Contains(k.Keyword1.ToLower())));
+            }
+
+            return await query.CountAsync();
+        }
+
         public override async Task<Blog> AddAsync(Blog entity)
         {
             entity.CreateAt = DateTime.Now;

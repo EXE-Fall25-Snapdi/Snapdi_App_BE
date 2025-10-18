@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
 using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
+using static Snapdi.Services.DTOs.PhotographerSearchDto;
 
 namespace Snapdi.Api.Controllers
 {
@@ -224,12 +226,6 @@ namespace Snapdi.Api.Controllers
                 if (await _userService.IsEmailExistsAsync(createUserDto.Email))
                 {
                     return BadRequest(new { error = "Email already exists", message = $"A user with email {createUserDto.Email} already exists" });
-                }
-
-                // Check if phone already exists (if provided)
-                if (!string.IsNullOrEmpty(createUserDto.Phone) && await _userService.IsPhoneExistsAsync(createUserDto.Phone))
-                {
-                    return BadRequest(new { error = "Phone already exists", message = $"A user with phone {createUserDto.Phone} already exists" });
                 }
 
                 // Create user with admin flag (auto-verified)
@@ -517,6 +513,10 @@ namespace Snapdi.Api.Controllers
             }
         }
 
+
+
+
+
         #region Private Helper Methods
 
         /// <summary>
@@ -562,9 +562,7 @@ namespace Snapdi.Api.Controllers
         #endregion
     }
 
-    public class UpdateUserStatusDto
-    {
-        public bool IsActive { get; set; }
-        public bool IsVerify { get; set; }
-    }
+  
+
+    
 }
