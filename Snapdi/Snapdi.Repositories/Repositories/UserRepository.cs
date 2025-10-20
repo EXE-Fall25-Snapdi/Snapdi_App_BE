@@ -391,6 +391,7 @@ namespace Snapdi.Repositories.Repositories
             double? maxRating = null,
             string? yearsOfExperience = null,
             bool? hasPortfolio = null,
+            List<int>? styleIds = null,
             DateTime? createdFrom = null,
             DateTime? createdTo = null,
             string? sortBy = "createdAt",
@@ -401,6 +402,8 @@ namespace Snapdi.Repositories.Repositories
             var query = _context.Users
                 .Include(u => u.Role)
                 .Include(u => u.PhotographerProfile)
+                    .ThenInclude(pp => pp.PhotographerStyles)
+                        .ThenInclude(ps => ps.Style)
                 .Include(u => u.PhotoPortfolios)
                 .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && u.PhotographerProfile != null)
                 .AsQueryable();
@@ -474,6 +477,16 @@ namespace Snapdi.Repositories.Repositories
                 else
                 {
                     query = query.Where(u => !u.PhotoPortfolios.Any());
+                }
+            }
+
+            // Apply style filter - photographer must have ALL specified styles
+            if (styleIds != null && styleIds.Any())
+            {
+                foreach (var styleId in styleIds)
+                {
+                    var currentStyleId = styleId; // Capture for closure
+                    query = query.Where(u => u.PhotographerProfile!.PhotographerStyles.Any(ps => ps.StyleId == currentStyleId));
                 }
             }
 

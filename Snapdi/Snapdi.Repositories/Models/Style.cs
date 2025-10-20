@@ -17,4 +17,7 @@ public partial class Style
 
     [InverseProperty("Style")]
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+
+    [InverseProperty("Style")]
+    public virtual ICollection<PhotographerStyle> PhotographerStyles { get; set; } = new List<PhotographerStyle>();
 }
