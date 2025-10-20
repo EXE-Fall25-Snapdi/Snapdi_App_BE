@@ -36,6 +36,9 @@ public partial class Booking
 
     public double Price { get; set; }
 
+    [StringLength(1000)]
+    public string? Note { get; set; }
+
     [ForeignKey("CustomerId")]
     [InverseProperty("BookingCustomers")]
     public virtual User? Customer { get; set; }

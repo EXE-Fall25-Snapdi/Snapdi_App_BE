@@ -513,6 +513,67 @@ namespace Snapdi.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Search photographers with filtering and paging (Authenticated users)
+        /// </summary>
+        [HttpPost("photographers/search")]
+        [Authorize] // Any authenticated user can search for photographers
+        public async Task<ActionResult<PhotographerSearchResultDto>> SearchPhotographers(PhotographerSearchDto searchDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { 
+                        error = "Validation failed", 
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                var result = await _userService.SearchPhotographersAsync(searchDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while searching photographers", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Find snappers (photographers) based on availability, city, and level (Public endpoint)
+        /// </summary>
+        [HttpPost("snappers/find")]
+        public async Task<ActionResult<FindSnapperResultDto>> FindSnappers(FindSnapperDto findSnapperDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { 
+                        error = "Validation failed", 
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                var result = await _userService.FindSnappersAsync(findSnapperDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while finding snappers", details = ex.Message });
+            }
+        }
+
 
 
 
