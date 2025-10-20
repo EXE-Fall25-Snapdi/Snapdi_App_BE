@@ -40,6 +40,8 @@ public partial class SnapdiDbV2Context : DbContext
 
     public virtual DbSet<PhotographerProfile> PhotographerProfiles { get; set; }
 
+    public virtual DbSet<PhotographerStyle> PhotographerStyles { get; set; }
+
     public virtual DbSet<Review> Reviews { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -82,6 +84,8 @@ public partial class SnapdiDbV2Context : DbContext
         modelBuilder.Entity<Booking>(entity =>
         {
             entity.HasKey(e => e.BookingId).HasName("PK__Booking__73951ACDC273B8F2");
+
+            entity.Property(e => e.Note).HasMaxLength(1000);
 
             entity.HasOne(d => d.Customer).WithMany(p => p.BookingCustomers).HasConstraintName("FK__Booking__Custome__534D60F1");
 
@@ -168,6 +172,21 @@ public partial class SnapdiDbV2Context : DbContext
             entity.Property(e => e.UserId).ValueGeneratedNever();
 
             entity.HasOne(d => d.User).WithOne(p => p.PhotographerProfile).HasConstraintName("FK__Photograp__UserI__4AB81AF0");
+        });
+
+        modelBuilder.Entity<PhotographerStyle>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.StyleId }).HasName("PK__Photogra__PhotographerStyle");
+
+            entity.HasOne(d => d.PhotographerProfile).WithMany(p => p.PhotographerStyles)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Photograp__UserI__PhotographerStyle");
+
+            entity.HasOne(d => d.Style).WithMany(p => p.PhotographerStyles)
+                .HasForeignKey(d => d.StyleId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Photograp__Style__PhotographerStyle");
         });
 
         modelBuilder.Entity<Review>(entity =>

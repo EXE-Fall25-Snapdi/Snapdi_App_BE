@@ -43,6 +43,9 @@ namespace Snapdi.Services.Interfaces
         // Photographer search method
         Task<PhotographerSearchResultDto> SearchPhotographersAsync(PhotographerSearchDto searchDto);
         
+        // Find snappers (simplified photographer search)
+        Task<FindSnapperResultDto> FindSnappersAsync(FindSnapperDto findSnapperDto);
+        
         // Get photographers pending level assignment (for admin)
         Task<IEnumerable<UserWithPhotographerDto>> GetPhotographersPendingLevelAssignmentAsync();
         

@@ -32,4 +32,7 @@ public partial class PhotographerProfile
     [ForeignKey("UserId")]
     [InverseProperty("PhotographerProfile")]
     public virtual User User { get; set; } = null!;
+
+    [InverseProperty("PhotographerProfile")]
+    public virtual ICollection<PhotographerStyle> PhotographerStyles { get; set; } = new List<PhotographerStyle>();
 }
