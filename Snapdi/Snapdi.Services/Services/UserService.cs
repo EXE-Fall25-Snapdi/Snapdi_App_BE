@@ -548,7 +548,9 @@ namespace Snapdi.Services.Services
                 searchDto.HasPortfolio,
                 null, // styleIds - No style filtering in comprehensive search (for now)
                 null, // workLocation - Not used in comprehensive search
-                null, // photoType - Not used in comprehensive search
+                null, // photoTypeIds - Not used in comprehensive search
+                null, // minPrice - Not used in comprehensive search
+                null, // maxPrice - Not used in comprehensive search
                 searchDto.CreatedFrom,
                 searchDto.CreatedTo,
                 searchDto.SortBy,
@@ -575,7 +577,7 @@ namespace Snapdi.Services.Services
                 findSnapperDto.PageSize,
                 searchTerm: null, // No search term in simplified search
                 locationCity: null, // Deprecated - using workLocation instead
-                levelPhotographer: findSnapperDto.Level,
+                levelPhotographer: null, // No level filtering
                 isAvailable: findSnapperDto.IsAvailable,
                 isVerify: true, // Only show verified photographers
                 isActive: true, // Only show active photographers
@@ -585,7 +587,9 @@ namespace Snapdi.Services.Services
                 hasPortfolio: null,
                 styleIds: findSnapperDto.StyleIds, // Pass style IDs for filtering
                 workLocation: findSnapperDto.WorkLocation, // Use WorkLocation filter
-                photoTypeIds: findSnapperDto.PhotoTypeIds, // Use PhotoTypeIds filter (changed from photoType)
+                photoTypeIds: findSnapperDto.PhotoTypeIds, // Use PhotoTypeIds filter
+                minPrice: findSnapperDto.MinPrice, // Use MinPrice filter
+                maxPrice: findSnapperDto.MaxPrice, // Use MaxPrice filter
                 createdFrom: null,
                 createdTo: null,
                 sortBy: findSnapperDto.SortBy,

@@ -15,11 +15,18 @@ namespace Snapdi.Services.DTOs
         public string? WorkLocation { get; set; }
 
         /// <summary>
-        /// Filter by photographer level (optional)
-        /// Example values: "Beginner", "Intermediate", "Professional", "Expert"
+        /// Minimum price range for photo services (optional)
+        /// Filters photographers with PhotoPrice >= MinPrice
         /// </summary>
-        [MaxLength(50, ErrorMessage = "Level cannot exceed 50 characters")]
-        public string? Level { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Minimum price must be a positive number")]
+        public double? MinPrice { get; set; }
+
+        /// <summary>
+        /// Maximum price range for photo services (optional)
+        /// Filters photographers with PhotoPrice <= MaxPrice
+        /// </summary>
+        [Range(0, double.MaxValue, ErrorMessage = "Maximum price must be a positive number")]
+        public double? MaxPrice { get; set; }
 
         /// <summary>
         /// Filter by photo type IDs (optional)
@@ -52,10 +59,10 @@ namespace Snapdi.Services.DTOs
         public int PageSize { get; set; } = 10;
 
         /// <summary>
-        /// Sort by field: "name", "rating", "worklocation", "level"
+        /// Sort by field: "name", "rating", "worklocation", "price"
         /// </summary>
-        [RegularExpression(@"^(name|rating|worklocation|level)$", 
-            ErrorMessage = "Sort by must be 'name', 'rating', 'worklocation', or 'level'")]
+        [RegularExpression(@"^(name|rating|worklocation|price)$", 
+            ErrorMessage = "Sort by must be 'name', 'rating', 'worklocation', or 'price'")]
         public string? SortBy { get; set; } = "rating";
 
         /// <summary>

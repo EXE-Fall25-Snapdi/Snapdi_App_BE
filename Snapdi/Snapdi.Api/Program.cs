@@ -164,6 +164,7 @@ builder.Services.AddScoped<IVoucherUsageRepository, VoucherUsageRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IStyleRepository, StyleRepository>();
 builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleRepository>();
+builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -179,6 +180,7 @@ builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IStyleService, StyleService>();
 builder.Services.AddScoped<IPhotographerStyleService, PhotographerStyleService>();
+builder.Services.AddScoped<IPhotoTypeService, PhotoTypeService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
