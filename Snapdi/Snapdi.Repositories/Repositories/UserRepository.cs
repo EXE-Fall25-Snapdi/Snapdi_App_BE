@@ -399,6 +399,7 @@ namespace Snapdi.Repositories.Repositories
             bool? hasPortfolio = null,
             List<int>? styleIds = null,
             string? workLocation = null,
+            List<int>? photoTypeIds = null,
             DateTime? createdFrom = null,
             DateTime? createdTo = null,
             string? sortBy = "createdAt",
@@ -411,6 +412,9 @@ namespace Snapdi.Repositories.Repositories
                 .Include(u => u.PhotographerProfile)
                     .ThenInclude(pp => pp.PhotographerStyles)
                         .ThenInclude(ps => ps.Style)
+                .Include(u => u.PhotographerProfile)
+                    .ThenInclude(pp => pp.PhotographerPhotoTypes)
+                        .ThenInclude(ppt => ppt.PhotoType)
                 .Include(u => u.PhotoPortfolios)
                 .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && u.PhotographerProfile != null)
                 .AsQueryable();
@@ -436,6 +440,16 @@ namespace Snapdi.Repositories.Repositories
             {
                 query = query.Where(u => u.PhotographerProfile!.WorkLocation != null && 
                                         u.PhotographerProfile.WorkLocation.ToLower().Contains(workLocation.ToLower()));
+            }
+
+            // Apply photo type filter - photographer must have ALL specified photo types
+            if (photoTypeIds != null && photoTypeIds.Any())
+            {
+                foreach (var photoTypeId in photoTypeIds)
+                {
+                    var currentPhotoTypeId = photoTypeId; // Capture for closure
+                    query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => ppt.PhotoTypeId == currentPhotoTypeId));
+                }
             }
 
             // Apply photographer level filter

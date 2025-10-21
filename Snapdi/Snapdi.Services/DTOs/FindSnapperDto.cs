@@ -22,6 +22,12 @@ namespace Snapdi.Services.DTOs
         public string? Level { get; set; }
 
         /// <summary>
+        /// Filter by photo type IDs (optional)
+        /// Example: [1, 2, 3] for specific photo types
+        /// </summary>
+        public List<int>? PhotoTypeIds { get; set; }
+
+        /// <summary>
         /// Filter by photography style IDs (optional)
         /// Example: [1, 2, 3] for specific styles
         /// </summary>
@@ -133,8 +139,10 @@ namespace Snapdi.Services.DTOs
         public string? EquipmentDescription { get; set; }
         public string? Description { get; set; }
         public double? PhotoPrice { get; set; }
-        public string? PhotoType { get; set; }
         public string? WorkLocation { get; set; }
+
+        // Photo Types Information
+        public List<PhotoTypeDto>? PhotoTypes { get; set; }
 
         // Style Information
         public List<StyleDto>? Styles { get; set; }
@@ -151,5 +159,14 @@ namespace Snapdi.Services.DTOs
     {
         public int StyleId { get; set; }
         public string StyleName { get; set; } = null!;
+    }
+
+    /// <summary>
+    /// DTO for photo type information
+    /// </summary>
+    public class PhotoTypeDto
+    {
+        public int PhotoTypeId { get; set; }
+        public string PhotoTypeName { get; set; } = null!;
     }
 }
