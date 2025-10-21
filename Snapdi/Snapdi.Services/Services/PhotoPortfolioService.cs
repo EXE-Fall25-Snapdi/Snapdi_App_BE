@@ -64,6 +64,102 @@ namespace Snapdi.Services.Services
             return MapToPhotoPortfolioDto(createdPortfolio);
         }
 
+        public async Task<CreateMultiplePhotoPortfolioResponseDto> CreateMultiplePhotoPortfoliosAsync(int userId, CreateMultiplePhotoPortfolioDto createDto)
+        {
+            var response = new CreateMultiplePhotoPortfolioResponseDto
+            {
+                TotalAttempted = createDto.PhotoUrls.Count
+            };
+
+            // Verify user exists
+            var userExists = await _userRepository.ExistsAsync(u => u.UserId == userId);
+            if (!userExists)
+            {
+                throw new InvalidOperationException($"User with ID {userId} does not exist.");
+            }
+
+            // Filter out null, empty, or whitespace photo URLs and remove duplicates
+            var validPhotoUrls = createDto.PhotoUrls
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Select(url => url.Trim())
+                .Distinct()
+                .ToList();
+
+            if (!validPhotoUrls.Any())
+            {
+                throw new ArgumentException("No valid photo URLs provided.");
+            }
+
+            // Update total attempted to reflect only valid URLs
+            response.TotalAttempted = validPhotoUrls.Count;
+
+            var portfolios = new List<PhotoPortfolio>();
+
+            // Create portfolio entities for all valid URLs
+            foreach (var photoUrl in validPhotoUrls)
+            {
+                try
+                {
+                    var portfolio = new PhotoPortfolio
+                    {
+                        UserId = userId,
+                        PhotoUrl = photoUrl
+                    };
+                    portfolios.Add(portfolio);
+                }
+                catch
+                {
+                    response.FailedPhotoUrls.Add(photoUrl);
+                }
+            }
+
+            // Bulk insert all portfolios
+            try
+            {
+                var createdPortfolios = await _photoPortfolioRepository.AddRangeAsync(portfolios);
+                await _photoPortfolioRepository.SaveChangesAsync();
+
+                response.CreatedPortfolios = createdPortfolios.Select(MapToPhotoPortfolioDto).ToList();
+                response.SuccessCount = response.CreatedPortfolios.Count;
+                response.FailedCount = response.FailedPhotoUrls.Count;
+
+                if (response.IsCompleteSuccess)
+                {
+                    response.Message = $"Successfully created {response.SuccessCount} photo portfolios.";
+                }
+                else
+                {
+                    response.Message = $"Created {response.SuccessCount} photo portfolios successfully. {response.FailedCount} failed to create.";
+                }
+            }
+            catch (Exception ex)
+            {
+                // If bulk insert fails, try individual inserts to identify which ones failed
+                response.CreatedPortfolios.Clear();
+                response.FailedPhotoUrls.Clear();
+
+                foreach (var portfolio in portfolios)
+                {
+                    try
+                    {
+                        var createdPortfolio = await _photoPortfolioRepository.AddAsync(portfolio);
+                        await _photoPortfolioRepository.SaveChangesAsync();
+                        response.CreatedPortfolios.Add(MapToPhotoPortfolioDto(createdPortfolio));
+                    }
+                    catch
+                    {
+                        response.FailedPhotoUrls.Add(portfolio.PhotoUrl);
+                    }
+                }
+
+                response.SuccessCount = response.CreatedPortfolios.Count;
+                response.FailedCount = response.FailedPhotoUrls.Count;
+                response.Message = $"Bulk insert failed. Created {response.SuccessCount} photo portfolios individually. {response.FailedCount} failed to create.";
+            }
+
+            return response;
+        }
+
         public async Task<PhotoPortfolioDto?> UpdatePhotoPortfolioAsync(int photoPortfolioId, UpdatePhotoPortfolioDto updateDto)
         {
             var portfolio = await _photoPortfolioRepository.GetByIdAsync(photoPortfolioId);

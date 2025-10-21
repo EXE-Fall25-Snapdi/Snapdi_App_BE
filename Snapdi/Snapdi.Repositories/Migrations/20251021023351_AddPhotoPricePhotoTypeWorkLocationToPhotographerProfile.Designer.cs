@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Snapdi.Repositories.Context;
 
@@ -11,9 +12,11 @@ using Snapdi.Repositories.Context;
 namespace Snapdi.Repositories.Migrations
 {
     [DbContext(typeof(SnapdiDbV2Context))]
-    partial class SnapdiDbV2ContextModelSnapshot : ModelSnapshot
+    [Migration("20251021023351_AddPhotoPricePhotoTypeWorkLocationToPhotographerProfile")]
+    partial class AddPhotoPricePhotoTypeWorkLocationToPhotographerProfile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -136,6 +139,10 @@ namespace Snapdi.Repositories.Migrations
                         .HasColumnType("int")
                         .HasColumnName("StatusID");
 
+                    b.Property<int?>("StyleId")
+                        .HasColumnType("int")
+                        .HasColumnName("StyleID");
+
                     b.HasKey("BookingId")
                         .HasName("PK__Booking__73951ACDC273B8F2");
 
@@ -144,6 +151,8 @@ namespace Snapdi.Repositories.Migrations
                     b.HasIndex("PhotographerId");
 
                     b.HasIndex("StatusId");
+
+                    b.HasIndex("StyleId");
 
                     b.ToTable("Booking");
                 });
@@ -412,44 +421,6 @@ namespace Snapdi.Repositories.Migrations
                     b.ToTable("PhotoPortfolio");
                 });
 
-            modelBuilder.Entity("Snapdi.Repositories.Models.PhotoType", b =>
-                {
-                    b.Property<int>("PhotoTypeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("PhotoTypeID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PhotoTypeId"));
-
-                    b.Property<string>("PhotoTypeName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("PhotoTypeId")
-                        .HasName("PK__PhotoTyp__8AD147A0C035264E");
-
-                    b.ToTable("PhotoType");
-                });
-
-            modelBuilder.Entity("Snapdi.Repositories.Models.PhotographerPhotoType", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("UserID");
-
-                    b.Property<int>("PhotoTypeId")
-                        .HasColumnType("int")
-                        .HasColumnName("PhotoTypeID");
-
-                    b.HasKey("UserId", "PhotoTypeId")
-                        .HasName("PK__Photogra__PhotographerPhotoType");
-
-                    b.HasIndex("PhotoTypeId");
-
-                    b.ToTable("PhotographerPhotoType");
-                });
-
             modelBuilder.Entity("Snapdi.Repositories.Models.PhotographerProfile", b =>
                 {
                     b.Property<int>("UserId")
@@ -476,6 +447,10 @@ namespace Snapdi.Repositories.Migrations
 
                     b.Property<decimal?>("PhotoPrice")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("PhotoType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("WorkLocation")
                         .HasMaxLength(255)
@@ -794,11 +769,18 @@ namespace Snapdi.Repositories.Migrations
                         .HasForeignKey("StatusId")
                         .HasConstraintName("FK__Booking__StatusI__5629CD9C");
 
+                    b.HasOne("Snapdi.Repositories.Models.Style", "Style")
+                        .WithMany("Bookings")
+                        .HasForeignKey("StyleId")
+                        .HasConstraintName("FK__Booking__StyleID__5535A963");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Photographer");
 
                     b.Navigation("Status");
+
+                    b.Navigation("Style");
                 });
 
             modelBuilder.Entity("Snapdi.Repositories.Models.ConversationParticipant", b =>
@@ -876,27 +858,6 @@ namespace Snapdi.Repositories.Migrations
                         .HasConstraintName("FK__PhotoPort__UserI__PhotoPortfolio_User");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Snapdi.Repositories.Models.PhotographerPhotoType", b =>
-                {
-                    b.HasOne("Snapdi.Repositories.Models.PhotoType", "PhotoType")
-                        .WithMany("PhotographerPhotoTypes")
-                        .HasForeignKey("PhotoTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK__Photograp__Photo__PhotographerPhotoType");
-
-                    b.HasOne("Snapdi.Repositories.Models.PhotographerProfile", "PhotographerProfile")
-                        .WithMany("PhotographerPhotoTypes")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK__Photograp__UserI__PhotographerPhotoType");
-
-                    b.Navigation("PhotoType");
-
-                    b.Navigation("PhotographerProfile");
                 });
 
             modelBuilder.Entity("Snapdi.Repositories.Models.PhotographerProfile", b =>
@@ -1025,15 +986,8 @@ namespace Snapdi.Repositories.Migrations
                     b.Navigation("Payments");
                 });
 
-            modelBuilder.Entity("Snapdi.Repositories.Models.PhotoType", b =>
-                {
-                    b.Navigation("PhotographerPhotoTypes");
-                });
-
             modelBuilder.Entity("Snapdi.Repositories.Models.PhotographerProfile", b =>
                 {
-                    b.Navigation("PhotographerPhotoTypes");
-
                     b.Navigation("PhotographerStyles");
                 });
 
@@ -1044,6 +998,8 @@ namespace Snapdi.Repositories.Migrations
 
             modelBuilder.Entity("Snapdi.Repositories.Models.Style", b =>
                 {
+                    b.Navigation("Bookings");
+
                     b.Navigation("PhotographerStyles");
                 });
 
