@@ -392,6 +392,7 @@ namespace Snapdi.Repositories.Repositories
             string? yearsOfExperience = null,
             bool? hasPortfolio = null,
             List<int>? styleIds = null,
+            string? workLocation = null,
             DateTime? createdFrom = null,
             DateTime? createdTo = null,
             string? sortBy = "createdAt",
@@ -418,10 +419,17 @@ namespace Snapdi.Repositories.Repositories
                     (u.PhotographerProfile!.Description != null && u.PhotographerProfile.Description.ToLower().Contains(searchLower)));
             }
 
-            // Apply location filter
+            // Apply location filter (for backward compatibility)
             if (!string.IsNullOrEmpty(locationCity))
             {
                 query = query.Where(u => u.LocationCity != null && u.LocationCity.ToLower().Contains(locationCity.ToLower()));
+            }
+
+            // Apply work location filter (searches in PhotographerProfile.WorkLocation)
+            if (!string.IsNullOrEmpty(workLocation))
+            {
+                query = query.Where(u => u.PhotographerProfile!.WorkLocation != null && 
+                                        u.PhotographerProfile.WorkLocation.ToLower().Contains(workLocation.ToLower()));
             }
 
             // Apply photographer level filter
@@ -513,6 +521,7 @@ namespace Snapdi.Repositories.Repositories
                     "rating" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.AvgRating ?? 0) : query.OrderBy(u => u.PhotographerProfile!.AvgRating ?? 0),
                     "createdat" => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
                     "yearsofexperience" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.YearsOfExperience ?? "") : query.OrderBy(u => u.PhotographerProfile!.YearsOfExperience ?? ""),
+                    "worklocation" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.WorkLocation ?? "") : query.OrderBy(u => u.PhotographerProfile!.WorkLocation ?? ""),
                     _ => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt)
                 };
             }

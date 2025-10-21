@@ -548,6 +548,7 @@ namespace Snapdi.Services.Services
                 searchDto.YearsOfExperience,
                 searchDto.HasPortfolio,
                 null, // styleIds - No style filtering in comprehensive search (for now)
+                null, // workLocation - Not used in comprehensive search
                 searchDto.CreatedFrom,
                 searchDto.CreatedTo,
                 searchDto.SortBy,
@@ -573,7 +574,7 @@ namespace Snapdi.Services.Services
                 findSnapperDto.Page,
                 findSnapperDto.PageSize,
                 searchTerm: null, // No search term in simplified search
-                locationCity: findSnapperDto.City,
+                locationCity: null, // Deprecated - using workLocation instead
                 levelPhotographer: findSnapperDto.Level,
                 isAvailable: findSnapperDto.IsAvailable,
                 isVerify: true, // Only show verified photographers
@@ -583,6 +584,7 @@ namespace Snapdi.Services.Services
                 yearsOfExperience: null,
                 hasPortfolio: null,
                 styleIds: findSnapperDto.StyleIds, // Pass style IDs for filtering
+                workLocation: findSnapperDto.WorkLocation, // NEW: Use WorkLocation filter
                 createdFrom: null,
                 createdTo: null,
                 sortBy: findSnapperDto.SortBy,

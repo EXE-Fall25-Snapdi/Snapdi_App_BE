@@ -52,6 +52,7 @@ namespace Snapdi.Repositories.Interfaces
             string? yearsOfExperience = null,
             bool? hasPortfolio = null,
             List<int>? styleIds = null,
+            string? workLocation = null,
             DateTime? createdFrom = null,
             DateTime? createdTo = null,
             string? sortBy = "createdAt",

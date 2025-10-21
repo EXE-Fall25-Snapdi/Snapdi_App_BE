@@ -8,10 +8,11 @@ namespace Snapdi.Services.DTOs
     public class FindSnapperDto
     {
         /// <summary>
-        /// Filter by location city (optional)
+        /// Filter by work location (optional)
+        /// Searches in photographer's preferred work location/service area
         /// </summary>
-        [MaxLength(100, ErrorMessage = "City cannot exceed 100 characters")]
-        public string? City { get; set; }
+        [MaxLength(255, ErrorMessage = "Work location cannot exceed 255 characters")]
+        public string? WorkLocation { get; set; }
 
         /// <summary>
         /// Filter by photographer level (optional)
@@ -45,10 +46,10 @@ namespace Snapdi.Services.DTOs
         public int PageSize { get; set; } = 10;
 
         /// <summary>
-        /// Sort by field: "name", "rating", "city", "level"
+        /// Sort by field: "name", "rating", "worklocation", "level"
         /// </summary>
-        [RegularExpression(@"^(name|rating|city|level)$", 
-            ErrorMessage = "Sort by must be 'name', 'rating', 'city', or 'level'")]
+        [RegularExpression(@"^(name|rating|worklocation|level)$", 
+            ErrorMessage = "Sort by must be 'name', 'rating', 'worklocation', or 'level'")]
         public string? SortBy { get; set; } = "rating";
 
         /// <summary>
