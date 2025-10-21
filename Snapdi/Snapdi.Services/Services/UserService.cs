@@ -161,7 +161,10 @@ namespace Snapdi.Services.Services
                 Description = createPhotographerDto.Description,
                 LevelPhotographer = null, // Always null on registration - only admin can set this
                 IsAvailable = createPhotographerDto.IsAvailable,
-                AvgRating = 0.0 // Initial rating
+                AvgRating = 0.0, // Initial rating
+                PhotoPrice = createPhotographerDto.PhotoPrice,
+                PhotoType = createPhotographerDto.PhotoType,
+                WorkLocation = createPhotographerDto.WorkLocation
             };
 
             await _photographerProfileRepository.AddAsync(photographerProfile);
@@ -652,7 +655,10 @@ namespace Snapdi.Services.Services
                     AvgRating = user.PhotographerProfile.AvgRating,
                     IsAvailable = user.PhotographerProfile.IsAvailable,
                     Description = user.PhotographerProfile.Description,
-                    LevelPhotographer = user.PhotographerProfile.LevelPhotographer
+                    LevelPhotographer = user.PhotographerProfile.LevelPhotographer,
+                    PhotoPrice = user.PhotographerProfile.PhotoPrice,
+                    PhotoType = user.PhotographerProfile.PhotoType,
+                    WorkLocation = user.PhotographerProfile.WorkLocation
                 };
             }
 
@@ -696,6 +702,9 @@ namespace Snapdi.Services.Services
                 snapperDto.YearsOfExperience = user.PhotographerProfile.YearsOfExperience;
                 snapperDto.EquipmentDescription = user.PhotographerProfile.EquipmentDescription;
                 snapperDto.Description = user.PhotographerProfile.Description;
+                snapperDto.PhotoPrice = user.PhotographerProfile.PhotoPrice;
+                snapperDto.PhotoType = user.PhotographerProfile.PhotoType;
+                snapperDto.WorkLocation = user.PhotographerProfile.WorkLocation;
 
                 // Map styles
                 if (user.PhotographerProfile.PhotographerStyles?.Any() == true)

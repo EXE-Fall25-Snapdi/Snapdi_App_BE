@@ -15,6 +15,9 @@ namespace Snapdi.Services.DTOs
         public bool IsAvailable { get; set; }
         public string? Description { get; set; }
         public string? LevelPhotographer { get; set; }
+        public double? PhotoPrice { get; set; }
+        public string? PhotoType { get; set; }
+        public string? WorkLocation { get; set; }
     }
 
     public class PhotoPortfolioDto
@@ -31,6 +34,9 @@ namespace Snapdi.Services.DTOs
         public bool IsAvailable { get; set; } = true;
         public string? Description { get; set; }
         public string? LevelPhotographer { get; set; } = string.Empty;
+        public double? PhotoPrice { get; set; }
+        public string? PhotoType { get; set; }
+        public string? WorkLocation { get; set; }
     }
 
     public class UpdatePhotographerProfileDto
@@ -40,6 +46,9 @@ namespace Snapdi.Services.DTOs
         public double? AvgRating { get; set; }
         public bool? IsAvailable { get; set; }
         public string? Description { get; set; }
+        public double? PhotoPrice { get; set; }
+        public string? PhotoType { get; set; }
+        public string? WorkLocation { get; set; }
     }
 
     public class CreatePhotoPortfolioDto

@@ -131,6 +131,9 @@ namespace Snapdi.Services.DTOs
         public string? YearsOfExperience { get; set; }
         public string? EquipmentDescription { get; set; }
         public string? Description { get; set; }
+        public double? PhotoPrice { get; set; }
+        public string? PhotoType { get; set; }
+        public string? WorkLocation { get; set; }
 
         // Style Information
         public List<StyleDto>? Styles { get; set; }
