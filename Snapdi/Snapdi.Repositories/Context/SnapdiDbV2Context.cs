@@ -92,8 +92,6 @@ public partial class SnapdiDbV2Context : DbContext
             entity.HasOne(d => d.Photographer).WithMany(p => p.BookingPhotographers).HasConstraintName("FK__Booking__Photogr__5441852A");
 
             entity.HasOne(d => d.Status).WithMany(p => p.Bookings).HasConstraintName("FK__Booking__StatusI__5629CD9C");
-
-            entity.HasOne(d => d.Style).WithMany(p => p.Bookings).HasConstraintName("FK__Booking__StyleID__5535A963");
         });
 
         modelBuilder.Entity<BookingStatus>(entity =>

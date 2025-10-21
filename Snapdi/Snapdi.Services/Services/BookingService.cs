@@ -51,7 +51,6 @@ namespace Snapdi.Services.Services
                 ScheduleAt = request.ScheduleAt,
                 LocationCity = request.LocationCity,
                 LocationAddress = request.LocationAddress,
-                StyleId = request.StyleId,
                 Price = request.Price,
                 StatusId = status.StatusId
             };
