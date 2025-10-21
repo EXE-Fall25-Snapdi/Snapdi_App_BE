@@ -25,4 +25,8 @@
     <ProjectReference Include="..\Snapdi.Services\Snapdi.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Scripts\" />
+  </ItemGroup>
+
 </Project>

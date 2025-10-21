@@ -17,7 +17,6 @@ namespace Snapdi.Services.DTOs
         /// Available levels: "Beginner", "Intermediate", "Advanced", "Professional", "Expert"
         /// </summary>
         /// <example>Professional</example>
-        [Required(ErrorMessage = "Level photographer is required")]
         [MaxLength(50, ErrorMessage = "Level photographer cannot exceed 50 characters")]
         public string LevelPhotographer { get; set; } = string.Empty;
     }
