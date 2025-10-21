@@ -50,6 +50,16 @@ namespace Snapdi.Services.DTOs
         public string? Description { get; set; }
 
         public bool IsAvailable { get; set; } = false;
+
+        // New fields for photographer
+        [Range(0, double.MaxValue, ErrorMessage = "Photo price must be a positive number")]
+        public double? PhotoPrice { get; set; }
+
+        [MaxLength(100, ErrorMessage = "Photo type cannot exceed 100 characters")]
+        public string? PhotoType { get; set; }
+
+        [MaxLength(255, ErrorMessage = "Work location cannot exceed 255 characters")]
+        public string? WorkLocation { get; set; }
     }
 
     /// <summary>

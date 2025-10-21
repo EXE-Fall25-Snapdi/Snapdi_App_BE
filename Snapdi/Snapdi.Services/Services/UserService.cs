@@ -161,7 +161,10 @@ namespace Snapdi.Services.Services
                 Description = createPhotographerDto.Description,
                 LevelPhotographer = null, // Always null on registration - only admin can set this
                 IsAvailable = createPhotographerDto.IsAvailable,
-                AvgRating = 0.0 // Initial rating
+                AvgRating = 0.0, // Initial rating
+                PhotoPrice = createPhotographerDto.PhotoPrice,
+                PhotoType = createPhotographerDto.PhotoType,
+                WorkLocation = createPhotographerDto.WorkLocation
             };
 
             await _photographerProfileRepository.AddAsync(photographerProfile);
@@ -545,6 +548,7 @@ namespace Snapdi.Services.Services
                 searchDto.YearsOfExperience,
                 searchDto.HasPortfolio,
                 null, // styleIds - No style filtering in comprehensive search (for now)
+                null, // workLocation - Not used in comprehensive search
                 searchDto.CreatedFrom,
                 searchDto.CreatedTo,
                 searchDto.SortBy,
@@ -570,7 +574,7 @@ namespace Snapdi.Services.Services
                 findSnapperDto.Page,
                 findSnapperDto.PageSize,
                 searchTerm: null, // No search term in simplified search
-                locationCity: findSnapperDto.City,
+                locationCity: null, // Deprecated - using workLocation instead
                 levelPhotographer: findSnapperDto.Level,
                 isAvailable: findSnapperDto.IsAvailable,
                 isVerify: true, // Only show verified photographers
@@ -580,6 +584,7 @@ namespace Snapdi.Services.Services
                 yearsOfExperience: null,
                 hasPortfolio: null,
                 styleIds: findSnapperDto.StyleIds, // Pass style IDs for filtering
+                workLocation: findSnapperDto.WorkLocation, // NEW: Use WorkLocation filter
                 createdFrom: null,
                 createdTo: null,
                 sortBy: findSnapperDto.SortBy,
@@ -652,7 +657,10 @@ namespace Snapdi.Services.Services
                     AvgRating = user.PhotographerProfile.AvgRating,
                     IsAvailable = user.PhotographerProfile.IsAvailable,
                     Description = user.PhotographerProfile.Description,
-                    LevelPhotographer = user.PhotographerProfile.LevelPhotographer
+                    LevelPhotographer = user.PhotographerProfile.LevelPhotographer,
+                    PhotoPrice = user.PhotographerProfile.PhotoPrice,
+                    PhotoType = user.PhotographerProfile.PhotoType,
+                    WorkLocation = user.PhotographerProfile.WorkLocation
                 };
             }
 
@@ -696,6 +704,9 @@ namespace Snapdi.Services.Services
                 snapperDto.YearsOfExperience = user.PhotographerProfile.YearsOfExperience;
                 snapperDto.EquipmentDescription = user.PhotographerProfile.EquipmentDescription;
                 snapperDto.Description = user.PhotographerProfile.Description;
+                snapperDto.PhotoPrice = user.PhotographerProfile.PhotoPrice;
+                snapperDto.PhotoType = user.PhotographerProfile.PhotoType;
+                snapperDto.WorkLocation = user.PhotographerProfile.WorkLocation;
 
                 // Map styles
                 if (user.PhotographerProfile.PhotographerStyles?.Any() == true)
