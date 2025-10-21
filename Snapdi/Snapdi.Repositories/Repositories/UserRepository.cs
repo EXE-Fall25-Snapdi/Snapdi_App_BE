@@ -90,6 +90,8 @@ namespace Snapdi.Repositories.Repositories
             return await _context.Users
                 .Include(u => u.Role)
                 .Include(u => u.PhotographerProfile)
+                    .ThenInclude(pp => pp.PhotographerStyles)
+                        .ThenInclude(ps => ps.Style)
                 .Include(u => u.PhotoPortfolios)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
         }
@@ -246,6 +248,8 @@ namespace Snapdi.Repositories.Repositories
             return await _context.Users
                 .Include(u => u.Role)
                 .Include(u => u.PhotographerProfile)
+                    .ThenInclude(pp => pp.PhotographerStyles)
+                        .ThenInclude(ps => ps.Style)
                 .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
                            u.IsVerify == true && 
                            u.PhotographerProfile != null && 
@@ -272,6 +276,8 @@ namespace Snapdi.Repositories.Repositories
             var baseQuery = _context.Users
                 .Include(u => u.Role)
                 .Include(u => u.PhotographerProfile)
+                    .ThenInclude(pp => pp.PhotographerStyles)
+                        .ThenInclude(ps => ps.Style)
                 .Include(u => u.PhotoPortfolios)
                 .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
                            u.IsVerify == true && 

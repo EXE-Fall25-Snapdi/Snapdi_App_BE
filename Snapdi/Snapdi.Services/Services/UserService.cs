@@ -662,6 +662,19 @@ namespace Snapdi.Services.Services
                     PhotoType = user.PhotographerProfile.PhotoType,
                     WorkLocation = user.PhotographerProfile.WorkLocation
                 };
+
+                // Map photographer styles
+                if (user.PhotographerProfile.PhotographerStyles?.Any() == true)
+                {
+                    userDto.PhotographerProfile.PhotographerStyles = user.PhotographerProfile.PhotographerStyles
+                        .Where(ps => ps.Style != null)
+                        .Select(ps => new StyleDto
+                        {
+                            StyleId = ps.StyleId,
+                            StyleName = ps.Style.StyleName
+                        })
+                        .ToList();
+                }
             }
 
             // Map photo portfolios

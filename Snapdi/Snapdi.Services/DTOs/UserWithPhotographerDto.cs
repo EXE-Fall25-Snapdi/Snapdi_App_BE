@@ -18,6 +18,10 @@ namespace Snapdi.Services.DTOs
         public double? PhotoPrice { get; set; }
         public string? PhotoType { get; set; }
         public string? WorkLocation { get; set; }
+        /// <summary>
+        /// List of photography styles associated with this photographer
+        /// </summary>
+        public List<StyleDto>? PhotographerStyles { get; set; }
     }
 
     public class PhotoPortfolioDto
