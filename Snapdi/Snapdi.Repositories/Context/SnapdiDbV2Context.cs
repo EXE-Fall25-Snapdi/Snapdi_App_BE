@@ -42,6 +42,10 @@ public partial class SnapdiDbV2Context : DbContext
 
     public virtual DbSet<PhotographerStyle> PhotographerStyles { get; set; }
 
+    public virtual DbSet<PhotoType> PhotoTypes { get; set; }
+
+    public virtual DbSet<PhotographerPhotoType> PhotographerPhotoTypes { get; set; }
+
     public virtual DbSet<Review> Reviews { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -187,6 +191,26 @@ public partial class SnapdiDbV2Context : DbContext
                 .HasForeignKey(d => d.StyleId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Photograp__Style__PhotographerStyle");
+        });
+
+        modelBuilder.Entity<PhotoType>(entity =>
+        {
+            entity.HasKey(e => e.PhotoTypeId).HasName("PK__PhotoTyp__8AD147A0C035264E");
+        });
+
+        modelBuilder.Entity<PhotographerPhotoType>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.PhotoTypeId }).HasName("PK__Photogra__PhotographerPhotoType");
+
+            entity.HasOne(d => d.PhotographerProfile).WithMany(p => p.PhotographerPhotoTypes)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Photograp__UserI__PhotographerPhotoType");
+
+            entity.HasOne(d => d.PhotoType).WithMany(p => p.PhotographerPhotoTypes)
+                .HasForeignKey(d => d.PhotoTypeId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Photograp__Photo__PhotographerPhotoType");
         });
 
         modelBuilder.Entity<Review>(entity =>

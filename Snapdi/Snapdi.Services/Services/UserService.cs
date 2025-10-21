@@ -163,7 +163,6 @@ namespace Snapdi.Services.Services
                 IsAvailable = createPhotographerDto.IsAvailable,
                 AvgRating = 0.0, // Initial rating
                 PhotoPrice = createPhotographerDto.PhotoPrice,
-                PhotoType = createPhotographerDto.PhotoType,
                 WorkLocation = createPhotographerDto.WorkLocation
             };
 
@@ -549,6 +548,7 @@ namespace Snapdi.Services.Services
                 searchDto.HasPortfolio,
                 null, // styleIds - No style filtering in comprehensive search (for now)
                 null, // workLocation - Not used in comprehensive search
+                null, // photoType - Not used in comprehensive search
                 searchDto.CreatedFrom,
                 searchDto.CreatedTo,
                 searchDto.SortBy,
@@ -584,7 +584,8 @@ namespace Snapdi.Services.Services
                 yearsOfExperience: null,
                 hasPortfolio: null,
                 styleIds: findSnapperDto.StyleIds, // Pass style IDs for filtering
-                workLocation: findSnapperDto.WorkLocation, // NEW: Use WorkLocation filter
+                workLocation: findSnapperDto.WorkLocation, // Use WorkLocation filter
+                photoTypeIds: findSnapperDto.PhotoTypeIds, // Use PhotoTypeIds filter (changed from photoType)
                 createdFrom: null,
                 createdTo: null,
                 sortBy: findSnapperDto.SortBy,
@@ -659,9 +660,21 @@ namespace Snapdi.Services.Services
                     Description = user.PhotographerProfile.Description,
                     LevelPhotographer = user.PhotographerProfile.LevelPhotographer,
                     PhotoPrice = user.PhotographerProfile.PhotoPrice,
-                    PhotoType = user.PhotographerProfile.PhotoType,
                     WorkLocation = user.PhotographerProfile.WorkLocation
                 };
+
+                // Map photo types
+                if (user.PhotographerProfile.PhotographerPhotoTypes?.Any() == true)
+                {
+                    userDto.PhotographerProfile.PhotoTypes = user.PhotographerProfile.PhotographerPhotoTypes
+                        .Where(ppt => ppt.PhotoType != null)
+                        .Select(ppt => new PhotoTypeDto
+                        {
+                            PhotoTypeId = ppt.PhotoTypeId,
+                            PhotoTypeName = ppt.PhotoType.PhotoTypeName
+                        })
+                        .ToList();
+                }
             }
 
             // Map photo portfolios
@@ -705,7 +718,6 @@ namespace Snapdi.Services.Services
                 snapperDto.EquipmentDescription = user.PhotographerProfile.EquipmentDescription;
                 snapperDto.Description = user.PhotographerProfile.Description;
                 snapperDto.PhotoPrice = user.PhotographerProfile.PhotoPrice;
-                snapperDto.PhotoType = user.PhotographerProfile.PhotoType;
                 snapperDto.WorkLocation = user.PhotographerProfile.WorkLocation;
 
                 // Map styles
@@ -717,6 +729,19 @@ namespace Snapdi.Services.Services
                         {
                             StyleId = ps.StyleId,
                             StyleName = ps.Style.StyleName
+                        })
+                        .ToList();
+                }
+
+                // Map photo types
+                if (user.PhotographerProfile.PhotographerPhotoTypes?.Any() == true)
+                {
+                    snapperDto.PhotoTypes = user.PhotographerProfile.PhotographerPhotoTypes
+                        .Where(ppt => ppt.PhotoType != null)
+                        .Select(ppt => new PhotoTypeDto
+                        {
+                            PhotoTypeId = ppt.PhotoTypeId,
+                            PhotoTypeName = ppt.PhotoType.PhotoTypeName
                         })
                         .ToList();
                 }

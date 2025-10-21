@@ -31,9 +31,6 @@ public partial class PhotographerProfile
 
     public double? PhotoPrice { get; set; }
 
-    [StringLength(100)]
-    public string? PhotoType { get; set; }
-
     [StringLength(255)]
     public string? WorkLocation { get; set; }
 
@@ -43,4 +40,7 @@ public partial class PhotographerProfile
 
     [InverseProperty("PhotographerProfile")]
     public virtual ICollection<PhotographerStyle> PhotographerStyles { get; set; } = new List<PhotographerStyle>();
+
+    [InverseProperty("PhotographerProfile")]
+    public virtual ICollection<PhotographerPhotoType> PhotographerPhotoTypes { get; set; } = new List<PhotographerPhotoType>();
 }

@@ -53,6 +53,7 @@ namespace Snapdi.Repositories.Interfaces
             bool? hasPortfolio = null,
             List<int>? styleIds = null,
             string? workLocation = null,
+            List<int>? photoTypeIds = null,
             DateTime? createdFrom = null,
             DateTime? createdTo = null,
             string? sortBy = "createdAt",
