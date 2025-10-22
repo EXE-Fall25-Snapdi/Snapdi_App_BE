@@ -8,6 +8,7 @@ namespace Snapdi.Services.Interfaces
         Task<PhotoPortfolioDto?> GetPhotoPortfolioByIdAsync(int photoPortfolioId);
         Task<PhotoPortfolioDto?> GetPhotoPortfolioByIdAndUserIdAsync(int photoPortfolioId, int userId);
         Task<PhotoPortfolioDto> CreatePhotoPortfolioAsync(int userId, CreatePhotoPortfolioDto createDto);
+        Task<CreateMultiplePhotoPortfolioResponseDto> CreateMultiplePhotoPortfoliosAsync(int userId, CreateMultiplePhotoPortfolioDto createDto);
         Task<PhotoPortfolioDto?> UpdatePhotoPortfolioAsync(int photoPortfolioId, UpdatePhotoPortfolioDto updateDto);
         Task<PhotoPortfolioDto?> UpdatePhotoPortfolioByUserAsync(int photoPortfolioId, int userId, UpdatePhotoPortfolioDto updateDto);
         Task<bool> DeletePhotoPortfolioAsync(int photoPortfolioId);

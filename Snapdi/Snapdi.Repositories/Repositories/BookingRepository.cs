@@ -18,7 +18,6 @@ namespace Snapdi.Repositories.Repositories
             return await _dbSet
                 .Include(b => b.Customer)
                 .Include(b => b.Photographer)
-                .Include(b => b.Style)
                 .Include(b => b.Status)
                 .FirstOrDefaultAsync(b => b.BookingId == id);
         }

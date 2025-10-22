@@ -92,6 +92,124 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Create multiple photo portfolios for the current user
+        /// </summary>
+        /// <param name="createDto">The multiple photo portfolio creation data</param>
+        /// <returns>The creation result with success and failure details</returns>
+        [HttpPost("multiple")]
+        public async Task<ActionResult<CreateMultiplePhotoPortfolioResponseDto>> CreateMultiplePhotoPortfolios([FromBody] CreateMultiplePhotoPortfolioDto createDto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized("Invalid user token");
+            }
+
+            // Validate input
+            if (createDto.PhotoUrls == null || !createDto.PhotoUrls.Any())
+            {
+                return BadRequest("At least one photo URL is required");
+            }
+
+            // Remove null or empty URLs and validate
+            var validUrls = createDto.PhotoUrls.Where(url => !string.IsNullOrWhiteSpace(url)).ToList();
+            if (!validUrls.Any())
+            {
+                return BadRequest("No valid photo URLs provided");
+            }
+
+            try
+            {
+                var result = await _photoPortfolioService.CreateMultiplePhotoPortfoliosAsync(userId, createDto);
+                
+                // Return appropriate status code based on result
+                if (result.IsCompleteSuccess)
+                {
+                    return CreatedAtAction(nameof(GetMyPhotoPortfolios), result);
+                }
+                else if (result.SuccessCount > 0)
+                {
+                    // Partial success - some created, some failed
+                    return StatusCode(207, result); // 207 Multi-Status
+                }
+                else
+                {
+                    // Complete failure
+                    return BadRequest(result);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating photo portfolios", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Create multiple photo portfolios for a specific user (Admin only)
+        /// </summary>
+        /// <param name="userId">The user ID to create portfolios for</param>
+        /// <param name="createDto">The multiple photo portfolio creation data</param>
+        /// <returns>The creation result with success and failure details</returns>
+        [HttpPost("user/{userId:int}/multiple")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<CreateMultiplePhotoPortfolioResponseDto>> CreateMultiplePhotoPortfoliosForUser(int userId, [FromBody] CreateMultiplePhotoPortfolioDto createDto)
+        {
+            // Validate input
+            if (createDto.PhotoUrls == null || !createDto.PhotoUrls.Any())
+            {
+                return BadRequest("At least one photo URL is required");
+            }
+
+            // Remove null or empty URLs and validate
+            var validUrls = createDto.PhotoUrls.Where(url => !string.IsNullOrWhiteSpace(url)).ToList();
+            if (!validUrls.Any())
+            {
+                return BadRequest("No valid photo URLs provided");
+            }
+
+            try
+            {
+                var result = await _photoPortfolioService.CreateMultiplePhotoPortfoliosAsync(userId, createDto);
+                
+                // Return appropriate status code based on result
+                if (result.IsCompleteSuccess)
+                {
+                    return CreatedAtAction(nameof(GetPhotoPortfoliosByUserId), new { userId }, result);
+                }
+                else if (result.SuccessCount > 0)
+                {
+                    // Partial success - some created, some failed
+                    return StatusCode(207, result); // 207 Multi-Status
+                }
+                else
+                {
+                    // Complete failure
+                    return BadRequest(result);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating photo portfolios", error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Update a photo portfolio owned by the current user
         /// </summary>
         /// <param name="id">The photo portfolio ID</param>

@@ -161,7 +161,9 @@ namespace Snapdi.Services.Services
                 Description = createPhotographerDto.Description,
                 LevelPhotographer = null, // Always null on registration - only admin can set this
                 IsAvailable = createPhotographerDto.IsAvailable,
-                AvgRating = 0.0 // Initial rating
+                AvgRating = 0.0, // Initial rating
+                PhotoPrice = createPhotographerDto.PhotoPrice,
+                WorkLocation = createPhotographerDto.WorkLocation
             };
 
             await _photographerProfileRepository.AddAsync(photographerProfile);
@@ -544,6 +546,11 @@ namespace Snapdi.Services.Services
                 searchDto.MaxRating,
                 searchDto.YearsOfExperience,
                 searchDto.HasPortfolio,
+                null, // styleIds - No style filtering in comprehensive search (for now)
+                null, // workLocation - Not used in comprehensive search
+                null, // photoTypeIds - Not used in comprehensive search
+                null, // minPrice - Not used in comprehensive search
+                null, // maxPrice - Not used in comprehensive search
                 searchDto.CreatedFrom,
                 searchDto.CreatedTo,
                 searchDto.SortBy,
@@ -559,6 +566,49 @@ namespace Snapdi.Services.Services
                 TotalRecords = totalCount,
                 PageNumber = searchDto.PageNumber,
                 PageSize = searchDto.PageSize,
+            };
+        }
+
+        public async Task<FindSnapperResultDto> FindSnappersAsync(FindSnapperDto findSnapperDto)
+        {
+            // Map FindSnapperDto to the repository's SearchPhotographersAsync parameters
+            var (photographers, totalCount) = await _userRepository.SearchPhotographersAsync(
+                findSnapperDto.Page,
+                findSnapperDto.PageSize,
+                searchTerm: null, // No search term in simplified search
+                locationCity: null, // Deprecated - using workLocation instead
+                levelPhotographer: null, // No level filtering
+                isAvailable: findSnapperDto.IsAvailable,
+                isVerify: true, // Only show verified photographers
+                isActive: true, // Only show active photographers
+                minRating: null,
+                maxRating: null,
+                yearsOfExperience: null,
+                hasPortfolio: null,
+                styleIds: findSnapperDto.StyleIds, // Pass style IDs for filtering
+                workLocation: findSnapperDto.WorkLocation, // Use WorkLocation filter
+                photoTypeIds: findSnapperDto.PhotoTypeIds, // Use PhotoTypeIds filter
+                minPrice: findSnapperDto.MinPrice, // Use MinPrice filter
+                maxPrice: findSnapperDto.MaxPrice, // Use MaxPrice filter
+                createdFrom: null,
+                createdTo: null,
+                sortBy: findSnapperDto.SortBy,
+                sortDirection: findSnapperDto.SortDirection
+            );
+
+            // Map to SnapperDto
+            var snapperDtos = photographers.Select(MapToSnapperDto).ToList();
+
+            // Count available snappers in results
+            var availableCount = snapperDtos.Count(s => s.IsAvailable);
+
+            return new FindSnapperResultDto
+            {
+                Snappers = snapperDtos,
+                TotalCount = totalCount,
+                CurrentPage = findSnapperDto.Page,
+                PageSize = findSnapperDto.PageSize,
+                AvailableCount = availableCount
             };
         }
 
@@ -612,8 +662,36 @@ namespace Snapdi.Services.Services
                     AvgRating = user.PhotographerProfile.AvgRating,
                     IsAvailable = user.PhotographerProfile.IsAvailable,
                     Description = user.PhotographerProfile.Description,
-                    LevelPhotographer = user.PhotographerProfile.LevelPhotographer
+                    LevelPhotographer = user.PhotographerProfile.LevelPhotographer,
+                    PhotoPrice = user.PhotographerProfile.PhotoPrice,
+                    WorkLocation = user.PhotographerProfile.WorkLocation
                 };
+
+                // Map photographer styles
+                if (user.PhotographerProfile.PhotographerStyles?.Any() == true)
+                {
+                    userDto.PhotographerProfile.PhotographerStyles = user.PhotographerProfile.PhotographerStyles
+                        .Where(ps => ps.Style != null)
+                        .Select(ps => new StyleDto
+                        {
+                            StyleId = ps.StyleId,
+                            StyleName = ps.Style.StyleName
+                        })
+                        .ToList();
+                }
+
+                // Map photo types
+                if (user.PhotographerProfile.PhotographerPhotoTypes?.Any() == true)
+                {
+                    userDto.PhotographerProfile.PhotoTypes = user.PhotographerProfile.PhotographerPhotoTypes
+                        .Where(ppt => ppt.PhotoType != null)
+                        .Select(ppt => new PhotoTypeDto
+                        {
+                            PhotoTypeId = ppt.PhotoTypeId,
+                            PhotoTypeName = ppt.PhotoType.PhotoTypeName
+                        })
+                        .ToList();
+                }
             }
 
             // Map photo portfolios
@@ -628,6 +706,72 @@ namespace Snapdi.Services.Services
             }
 
             return userDto;
+        }
+
+        private static SnapperDto MapToSnapperDto(User user)
+        {
+            var snapperDto = new SnapperDto
+            {
+                UserId = user.UserId,
+                Name = user.Name,
+                Email = user.Email,
+                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone,
+                LocationCity = string.IsNullOrEmpty(user.LocationCity) ? null : user.LocationCity,
+                LocationAddress = string.IsNullOrEmpty(user.LocationAddress) ? null : user.LocationAddress,
+                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl,
+                IsActive = user.IsActive,
+                IsVerify = user.IsVerify,
+                PortfolioCount = 0,
+                PortfolioUrls = new List<string>()
+            };
+
+            // Map photographer profile
+            if (user.PhotographerProfile != null)
+            {
+                snapperDto.LevelPhotographer = user.PhotographerProfile.LevelPhotographer;
+                snapperDto.IsAvailable = user.PhotographerProfile.IsAvailable;
+                snapperDto.AvgRating = user.PhotographerProfile.AvgRating;
+                snapperDto.YearsOfExperience = user.PhotographerProfile.YearsOfExperience;
+                snapperDto.EquipmentDescription = user.PhotographerProfile.EquipmentDescription;
+                snapperDto.Description = user.PhotographerProfile.Description;
+                snapperDto.PhotoPrice = user.PhotographerProfile.PhotoPrice;
+                snapperDto.WorkLocation = user.PhotographerProfile.WorkLocation;
+
+                // Map styles
+                if (user.PhotographerProfile.PhotographerStyles?.Any() == true)
+                {
+                    snapperDto.Styles = user.PhotographerProfile.PhotographerStyles
+                        .Where(ps => ps.Style != null)
+                        .Select(ps => new StyleDto
+                        {
+                            StyleId = ps.StyleId,
+                            StyleName = ps.Style.StyleName
+                        })
+                        .ToList();
+                }
+
+                // Map photo types
+                if (user.PhotographerProfile.PhotographerPhotoTypes?.Any() == true)
+                {
+                    snapperDto.PhotoTypes = user.PhotographerProfile.PhotographerPhotoTypes
+                        .Where(ppt => ppt.PhotoType != null)
+                        .Select(ppt => new PhotoTypeDto
+                        {
+                            PhotoTypeId = ppt.PhotoTypeId,
+                            PhotoTypeName = ppt.PhotoType.PhotoTypeName
+                        })
+                        .ToList();
+                }
+            }
+
+            // Map photo portfolios
+            if (user.PhotoPortfolios?.Any() == true)
+            {
+                snapperDto.PortfolioCount = user.PhotoPortfolios.Count;
+                snapperDto.PortfolioUrls = user.PhotoPortfolios.Select(p => p.PhotoUrl).ToList();
+            }
+
+            return snapperDto;
         }
 
         private static string HashPassword(string password)

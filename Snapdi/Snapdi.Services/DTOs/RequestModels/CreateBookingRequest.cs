@@ -13,7 +13,6 @@ namespace Snapdi.Services.DTOs.RequestModels
         public DateTime ScheduleAt { get; set; }
         public string LocationCity { get; set; } = string.Empty;
         public string LocationAddress { get; set; } = string.Empty;
-        public int StyleId { get; set; }
         public double Price { get; set; }
     }
 }
