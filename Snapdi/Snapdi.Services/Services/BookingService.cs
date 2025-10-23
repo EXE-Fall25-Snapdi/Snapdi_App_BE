@@ -1,33 +1,33 @@
-﻿using AutoMapper;
+﻿using Microsoft.AspNetCore.SignalR;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Services.DTOs.RequestModels;
 using Snapdi.Services.DTOs.ResponseModels;
+using Snapdi.Services.Hubs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Snapdi.Services.Services
 {
-    public  class BookingService : Interfaces.IBookingService
+    public class BookingService : Interfaces.IBookingService
     {
         private readonly IBookingRepository _bookingRepo;
         private readonly IBaseRepository<User> _userRepo;
         private readonly IBaseRepository<BookingStatus> _statusRepo;
-        private readonly IMapper _mapper;
+        private readonly IHubContext<BookingHub> _bookingHub;
 
         public BookingService(
             IBookingRepository bookingRepo,
             IBaseRepository<User> userRepo,
             IBaseRepository<BookingStatus> statusRepo,
-            IMapper mapper)
+            IHubContext<BookingHub> bookingHub)
         {
             _bookingRepo = bookingRepo;
             _userRepo = userRepo;
             _statusRepo = statusRepo;
-            _mapper = mapper;
+            _bookingHub = bookingHub;
         }
 
         public async Task<BookingResponse> CreateBookingAsync(CreateBookingRequest request)
@@ -58,7 +58,9 @@ namespace Snapdi.Services.Services
             await _bookingRepo.AddAsync(booking);
             await _bookingRepo.SaveChangesAsync();
 
-            return _mapper.Map<BookingResponse>(booking);
+            // Reload with navigation properties for mapping
+            var created = await _bookingRepo.GetBookingWithDetailsAsync(booking.BookingId) ?? booking;
+            return MapToResponse(created);
         }
 
         public async Task<BookingResponse> UpdateBookingStatusAsync(int bookingId, int newStatusId)
@@ -71,15 +73,46 @@ namespace Snapdi.Services.Services
             await _bookingRepo.UpdateAsync(booking);
             await _bookingRepo.SaveChangesAsync();
 
-            return _mapper.Map<BookingResponse>(booking);
+            var updated = await _bookingRepo.GetBookingWithDetailsAsync(bookingId) ?? booking;
+            var response = MapToResponse(updated);
+
+            // Notify the customer group about status update if we have a customerId
+            if (updated.CustomerId.HasValue)
+            {
+                var groupName = $"customer-{updated.CustomerId.Value}";
+                await _bookingHub.Clients.Group(groupName).SendAsync("bookingStatusUpdated", new
+                {
+                    bookingId = response.BookingId,
+                    status = response.StatusName,
+                    scheduleAt = response.ScheduleAt,
+                    price = response.Price,
+                    photographerName = response.PhotographerName
+                });
+            }
+
+            return response;
         }
 
         public async Task<BookingResponse> GetBookingByIdAsync(int bookingId)
         {
-            var booking = await _bookingRepo.GetByIdAsync(bookingId);
+            var booking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
             if (booking == null)
                 throw new KeyNotFoundException($"Booking ID {bookingId} not found");
-            return _mapper.Map<BookingResponse>(booking);
+
+            return MapToResponse(booking);
+        }
+
+        private static BookingResponse MapToResponse(Booking booking)
+        {
+            return new BookingResponse
+            {
+                BookingId = booking.BookingId,
+                CustomerName = booking.Customer?.Name,
+                PhotographerName = booking.Photographer?.Name,
+                ScheduleAt = booking.ScheduleAt,
+                StatusName = booking.Status?.StatusName,
+                Price = booking.Price
+            };
         }
     }
 }

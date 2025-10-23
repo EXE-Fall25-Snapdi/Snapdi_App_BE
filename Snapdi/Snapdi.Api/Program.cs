@@ -10,6 +10,7 @@ using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
+using Snapdi.Services.Hubs;
 using Snapdi.Services.Interfaces;
 using Snapdi.Services.Interfaces.Snapdi.Services.Interfaces;
 using Snapdi.Services.Models;
@@ -74,8 +75,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-//  AutoMapper v15
-builder.Services.AddAutoMapper(cfg => { }, typeof(Program).Assembly);
+// Remove AutoMapper registration since manual mapping is used
+// builder.Services.AddAutoMapper(cfg => { }, typeof(Program).Assembly);
 
 
 // Add Authentication services
@@ -151,6 +152,9 @@ builder.Services.Configure<CloudinarySettings>(options =>
     options.UseSignedUpload = true;
 });
 
+// Register generic base repository for DI (fix for IBaseRepository<T>)
+builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
+
 // Register repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
@@ -175,7 +179,7 @@ builder.Services.AddScoped<IPhotoPortfolioService, PhotoPortfolioService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IVoucherUsageService, VoucherUsageService>();
-//builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IStyleService, StyleService>();
@@ -272,5 +276,6 @@ app.MapControllers();
 
 // Map SignalR hubs
 app.MapHub<Snapdi.Api.Hubs.ChatHub>("/hubs/chat");
+app.MapHub<BookingHub>("/hubs/booking");
 
 app.Run();

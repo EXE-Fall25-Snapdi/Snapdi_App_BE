@@ -61,6 +61,7 @@ public partial class SnapdiDbV2Context : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        
         modelBuilder.Entity<Blog>(entity =>
         {
             entity.HasKey(e => e.BlogId).HasName("PK__Blog__54379E506DDA2403");
