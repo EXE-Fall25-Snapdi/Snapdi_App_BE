@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Constants\" />
     <Folder Include="DTOs\ResponseModels\" />
   </ItemGroup>

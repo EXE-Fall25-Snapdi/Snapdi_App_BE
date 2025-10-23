@@ -10,6 +10,7 @@ using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
+using Snapdi.Services.Hubs;
 using Snapdi.Services.Interfaces;
 using Snapdi.Services.Interfaces.Snapdi.Services.Interfaces;
 using Snapdi.Services.Models;
@@ -269,5 +270,6 @@ app.MapControllers();
 
 // Map SignalR hubs
 app.MapHub<Snapdi.Api.Hubs.ChatHub>("/hubs/chat");
+app.MapHub<BookingHub>("/hubs/booking");
 
 app.Run();

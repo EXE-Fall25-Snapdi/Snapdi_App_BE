@@ -1,10 +1,12 @@
-﻿using Snapdi.Repositories.Interfaces;
+using Microsoft.AspNetCore.SignalR;
+using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
+
+using Snapdi.Services.Hubs;
 using Snapdi.Services.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Snapdi.Services.Services
@@ -23,6 +25,7 @@ namespace Snapdi.Services.Services
             _bookingRepo = bookingRepo;
             _userRepo = userRepo;
             _statusRepo = statusRepo;
+            _bookingHub = bookingHub;
         }
 
         public async Task<BookingResponse> CreateBookingAsync(CreateBookingRequest request)
@@ -69,10 +72,24 @@ namespace Snapdi.Services.Services
             await _bookingRepo.UpdateAsync(booking);
             await _bookingRepo.SaveChangesAsync();
 
-            // Reload to get updated status name
-            var updatedBooking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
-            
-            return MapToBookingResponse(updatedBooking!);
+            var updated = await _bookingRepo.GetBookingWithDetailsAsync(bookingId) ?? booking;
+            var response = MapToResponse(updated);
+
+            // Notify the customer group about status update if we have a customerId
+            if (updated.CustomerId.HasValue)
+            {
+                var groupName = $"customer-{updated.CustomerId.Value}";
+                await _bookingHub.Clients.Group(groupName).SendAsync("bookingStatusUpdated", new
+                {
+                    bookingId = response.BookingId,
+                    status = response.StatusName,
+                    scheduleAt = response.ScheduleAt,
+                    price = response.Price,
+                    photographerName = response.PhotographerName
+                });
+            }
+
+            return response;
         }
 
         public async Task<BookingResponse> GetBookingByIdAsync(int bookingId)
