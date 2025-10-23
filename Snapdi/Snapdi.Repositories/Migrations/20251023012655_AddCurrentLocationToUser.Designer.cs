@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Snapdi.Repositories.Context;
@@ -12,9 +13,11 @@ using Snapdi.Repositories.Context;
 namespace Snapdi.Repositories.Migrations
 {
     [DbContext(typeof(SnapdiDbV2Context))]
-    partial class SnapdiDbV2ContextModelSnapshot : ModelSnapshot
+    [Migration("20251023012655_AddCurrentLocationToUser")]
+    partial class AddCurrentLocationToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

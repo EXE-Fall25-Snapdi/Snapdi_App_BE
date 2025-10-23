@@ -111,7 +111,7 @@ builder.Services.AddAuthentication(options =>
 
 // Add DbContext
 builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, x => x.UseNetTopologySuite()));
 
 // Configure settings through DI
 builder.Services.Configure<AppSettings>(options =>
