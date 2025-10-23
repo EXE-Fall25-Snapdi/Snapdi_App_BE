@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
-
 using Snapdi.Services.Hubs;
 using Snapdi.Services.DTOs;
 using System;
@@ -16,11 +15,13 @@ namespace Snapdi.Services.Services
         private readonly IBookingRepository _bookingRepo;
         private readonly IUserRepository _userRepo;
         private readonly IBookingStatusRepository _statusRepo;
+        private readonly IHubContext<BookingHub> _bookingHub;
 
         public BookingService(
             IBookingRepository bookingRepo,
             IUserRepository userRepo,
-            IBookingStatusRepository statusRepo)
+            IBookingStatusRepository statusRepo,
+            IHubContext<BookingHub> bookingHub)
         {
             _bookingRepo = bookingRepo;
             _userRepo = userRepo;
@@ -72,20 +73,26 @@ namespace Snapdi.Services.Services
             await _bookingRepo.UpdateAsync(booking);
             await _bookingRepo.SaveChangesAsync();
 
-            var updated = await _bookingRepo.GetBookingWithDetailsAsync(bookingId) ?? booking;
-            var response = MapToResponse(updated);
+            // Reload to get updated status name
+            var updatedBooking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
+            var response = MapToBookingResponse(updatedBooking!);
 
             // Notify the customer group about status update if we have a customerId
-            if (updated.CustomerId.HasValue)
+            if (updatedBooking.CustomerId.HasValue)
             {
-                var groupName = $"customer-{updated.CustomerId.Value}";
+                var groupName = $"customer-{updatedBooking.CustomerId.Value}";
                 await _bookingHub.Clients.Group(groupName).SendAsync("bookingStatusUpdated", new
                 {
                     bookingId = response.BookingId,
-                    status = response.StatusName,
+                    statusId = response.Status?.StatusId,
+                    statusName = response.Status?.StatusName,
                     scheduleAt = response.ScheduleAt,
                     price = response.Price,
-                    photographerName = response.PhotographerName
+                    photographerId = response.Photographer?.UserId,
+                    photographerName = response.Photographer?.Name,
+                    customerName = response.Customer?.Name,
+                    locationAddress = response.LocationAddress,
+                    note = response.Note
                 });
             }
 
