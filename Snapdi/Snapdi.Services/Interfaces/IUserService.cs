@@ -45,6 +45,9 @@ namespace Snapdi.Services.Interfaces
         
         // Find snappers (simplified photographer search)
         Task<FindSnapperResultDto> FindSnappersAsync(FindSnapperDto findSnapperDto);
+
+        // Find snappers nearby for map display
+        Task<FindSnappersNearbyResultDto> FindSnappersNearbyAsync(FindSnappersNearbyDto findSnappersNearbyDto);
         
         // Get photographers pending level assignment (for admin)
         Task<IEnumerable<UserWithPhotographerDto>> GetPhotographersPendingLevelAssignmentAsync();
@@ -57,6 +60,9 @@ namespace Snapdi.Services.Interfaces
         
         // Update photographer level (for admin)
         Task<bool> UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
+        
+        // Update photographer availability status and location
+        Task<bool> UpdatePhotographerStatusAsync(int userId, bool isAvailable, LocationCoordinatesDto? currentLocation = null);
         
         // Photo portfolio method
         Task<IEnumerable<PhotoPortfolioDto>> GetPhotoPortfoliosByUserIdAsync(int userId);
