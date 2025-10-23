@@ -60,6 +60,18 @@ namespace Snapdi.Repositories.Interfaces
             DateTime? createdTo = null,
             string? sortBy = "createdAt",
             string? sortDirection = "desc");
+
+        // Find snappers nearby with radius-based geographic filtering
+        Task<List<(User User, double DistanceInKm)>> FindSnappersNearbyAsync(
+            double latitude,
+            double longitude,
+            double radiusInKm,
+            int limit,
+            bool? isAvailable = null,
+            List<int>? photoTypeIds = null,
+            List<int>? styleIds = null,
+            double? minPrice = null,
+            double? maxPrice = null);
             
         // Get photographers pending level assignment
         Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync();

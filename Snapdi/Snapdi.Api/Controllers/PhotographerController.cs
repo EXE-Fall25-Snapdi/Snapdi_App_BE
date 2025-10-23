@@ -72,6 +72,94 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Update photographer availability status and location
+        /// Photographers can update their own status, Admin can update any photographer's status
+        /// </summary>
+        /// <remarks>
+        /// Updates photographer availability and optionally their current GPS location.
+        /// 
+        /// Sample request:
+        /// {
+        ///   "isAvailable": true,
+        ///   "currentLocation": {
+        ///     "latitude": 10.762622,
+        ///     "longitude": 106.660172
+        ///   }
+        /// }
+        /// 
+        /// The currentLocation is optional. If not provided, only the availability status is updated.
+        /// </remarks>
+        [HttpPatch("{id}/status")]
+        [Authorize]
+        public async Task<ActionResult> UpdatePhotographerStatus(int id, [FromBody] UpdatePhotographerStatusDto statusDto)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest(new { error = "Invalid user ID", message = "User ID must be a positive number" });
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new
+                    {
+                        error = "Validation failed",
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                // Check if photographer exists
+                var photographer = await _userService.GetUserWithPhotographerProfileAsync(id);
+                if (photographer == null || photographer.PhotographerProfile == null)
+                {
+                    return NotFound(new { error = "Photographer not found", message = $"User with ID {id} does not exist or has no photographer profile" });
+                }
+
+                // Check authorization: user can update their own status OR admin can update any
+                var currentUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                var currentUserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+                if (currentUserIdClaim != null && int.TryParse(currentUserIdClaim.Value, out int currentUserId))
+                {
+                    // User can update their own status OR admin can update any photographer's status
+                    if (currentUserId != id && currentUserRole != "ADMIN")
+                    {
+                        return Forbid();
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { error = "Invalid token", message = "Could not determine current user" });
+                }
+
+                var result = await _userService.UpdatePhotographerStatusAsync(id, statusDto.IsAvailable, statusDto.CurrentLocation);
+                if (!result)
+                {
+                    return BadRequest(new { error = "Update failed", message = "Failed to update photographer status" });
+                }
+
+                return Ok(new
+                {
+                    userId = id,
+                    isAvailable = statusDto.IsAvailable,
+                    locationUpdated = statusDto.CurrentLocation != null,
+                    message = $"Photographer status updated successfully to {(statusDto.IsAvailable ? "available" : "unavailable")}" +
+                              (statusDto.CurrentLocation != null ? " with location updated" : "")
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while updating photographer status", details = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Search photographers with advanced filtering (POST method)
         /// </summary>
         /// <remarks>

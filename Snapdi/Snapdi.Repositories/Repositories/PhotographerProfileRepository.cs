@@ -44,6 +44,15 @@ namespace Snapdi.Repositories.Repositories
             return await _context.PhotographerProfiles.AnyAsync(p => p.UserId == userId);
         }
 
+        public async Task UpdatePhotographerStatusAsync(int userId, bool isAvailable)
+        {
+            var photographerProfile = await _context.PhotographerProfiles.FindAsync(userId);
+            if (photographerProfile != null)
+            {
+                photographerProfile.IsAvailable = isAvailable;
+            }
+        }
+
         public override async Task<PhotographerProfile?> GetByIdAsync(int id)
         {
             return await _context.PhotographerProfiles
