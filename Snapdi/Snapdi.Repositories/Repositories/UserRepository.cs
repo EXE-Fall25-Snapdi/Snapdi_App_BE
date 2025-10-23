@@ -441,7 +441,7 @@ namespace Snapdi.Repositories.Repositories
             if (!string.IsNullOrEmpty(workLocation))
             {
                 query = query.Where(u => u.PhotographerProfile!.WorkLocation != null && 
-                                        u.PhotographerProfile.WorkLocation.ToLower().Contains(workLocation.ToLower()));
+                                        workLocation.ToLower().Contains(u.PhotographerProfile!.WorkLocation.ToLower()));
             }
 
             // Apply photo type filter - photographer must have ALL specified photo types

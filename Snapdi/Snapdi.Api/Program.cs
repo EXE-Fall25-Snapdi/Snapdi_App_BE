@@ -75,10 +75,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Remove AutoMapper registration since manual mapping is used
-// builder.Services.AddAutoMapper(cfg => { }, typeof(Program).Assembly);
-
-
 // Add Authentication services
 builder.Services.AddAuthentication(options =>
 {
@@ -116,7 +112,7 @@ builder.Services.AddAuthentication(options =>
 
 // Add DbContext
 builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, x => x.UseNetTopologySuite()));
 
 // Configure settings through DI
 builder.Services.Configure<AppSettings>(options =>
@@ -152,9 +148,6 @@ builder.Services.Configure<CloudinarySettings>(options =>
     options.UseSignedUpload = true;
 });
 
-// Register generic base repository for DI (fix for IBaseRepository<T>)
-builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
-
 // Register repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
@@ -166,6 +159,7 @@ builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped<IVoucherUsageRepository, VoucherUsageRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IBookingStatusRepository, BookingStatusRepository>();
 builder.Services.AddScoped<IStyleRepository, StyleRepository>();
 builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleRepository>();
 builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();

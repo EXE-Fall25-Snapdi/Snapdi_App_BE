@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <Folder Include="Constants\" />
-    <Folder Include="Mapping\" />
+    <Folder Include="DTOs\ResponseModels\" />
   </ItemGroup>
 
 </Project>

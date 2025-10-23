@@ -3,8 +3,8 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NetTopologySuite.Geometries;
 using Snapdi.Repositories.Context;
 
 #nullable disable
@@ -12,9 +12,11 @@ using Snapdi.Repositories.Context;
 namespace Snapdi.Repositories.Migrations
 {
     [DbContext(typeof(SnapdiDbV2Context))]
-    partial class SnapdiDbV2ContextModelSnapshot : ModelSnapshot
+    [Migration("20251021143711_RemoveLocationCityFromBooking")]
+    partial class RemoveLocationCityFromBooking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -603,9 +605,6 @@ namespace Snapdi.Repositories.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime");
-
-                    b.Property<Point>("CurrentLocation")
-                        .HasColumnType("geography");
 
                     b.Property<string>("Email")
                         .IsRequired()

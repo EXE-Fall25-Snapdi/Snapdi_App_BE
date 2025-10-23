@@ -59,6 +59,15 @@ public partial class SnapdiDbV2Context : DbContext
     public virtual DbSet<VoucherUsage> VoucherUsages { get; set; }
 
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Enable NetTopologySuite for spatial data support
+            optionsBuilder.UseSqlServer(o => o.UseNetTopologySuite());
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         
@@ -242,6 +251,10 @@ public partial class SnapdiDbV2Context : DbContext
             entity.HasKey(e => e.UserId).HasName("PK__User__1788CCAC98BF1C87");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasConstraintName("FK__User__RoleID__3C69FB99");
+
+            // Configure spatial data for CurrentLocation
+            entity.Property(e => e.CurrentLocation)
+                .HasColumnType("geography");
         });
 
         modelBuilder.Entity<Voucher>(entity =>

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Snapdi.Services.DTOs.RequestModels;
+using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
 
 namespace Snapdi.Api.Controllers

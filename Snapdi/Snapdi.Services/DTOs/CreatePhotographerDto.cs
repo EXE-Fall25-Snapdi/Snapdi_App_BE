@@ -36,6 +36,11 @@ namespace Snapdi.Services.DTOs
 
         [MaxLength(255, ErrorMessage = "Avatar URL cannot exceed 255 characters")]
         public string? AvatarUrl { get; set; }
+        
+        /// <summary>
+        /// Initial location coordinates for the photographer
+        /// </summary>
+        public LocationCoordinatesDto? CurrentLocation { get; set; }
 
         // Photographer-specific required fields
         [Required(ErrorMessage = "Years of experience is required for photographers")]

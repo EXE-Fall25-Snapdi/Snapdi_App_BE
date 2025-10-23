@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace Snapdi.Repositories.Models;
 
@@ -50,6 +51,14 @@ public partial class User
 
     [StringLength(255)]
     public string? AvatarUrl { get; set; }
+
+    /// <summary>
+    /// Current location of the user stored as a geographic point (latitude, longitude).
+    /// Used for OpenStreetMap integration on the frontend.
+    /// Format: POINT(longitude latitude) - Note: longitude comes first in WKT format
+    /// </summary>
+    [Column(TypeName = "geography")]
+    public Point? CurrentLocation { get; set; }
 
     [InverseProperty("Author")]
     public virtual ICollection<Blog> Blogs { get; set; } = new List<Blog>();

@@ -2,6 +2,7 @@ using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
+using NetTopologySuite.Geometries;
 
 namespace Snapdi.Services.Services
 {
@@ -98,7 +99,10 @@ namespace Snapdi.Services.Services
                 RefreshToken = string.Empty,
                 IsActive = true,
                 IsVerify = isCreatedByAdmin, // Auto-verify if created by admin
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CurrentLocation = createUserDto.CurrentLocation != null 
+                    ? CreatePoint(createUserDto.CurrentLocation.Longitude, createUserDto.CurrentLocation.Latitude)
+                    : null
             };
 
             var createdUser = await _userRepository.AddAsync(user);
@@ -146,7 +150,10 @@ namespace Snapdi.Services.Services
                 RefreshToken = string.Empty,
                 IsActive = true,
                 IsVerify = false, // Email verification required for public registration
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CurrentLocation = createPhotographerDto.CurrentLocation != null 
+                    ? CreatePoint(createPhotographerDto.CurrentLocation.Longitude, createPhotographerDto.CurrentLocation.Latitude)
+                    : null
             };
 
             var createdUser = await _userRepository.AddAsync(user);
@@ -236,6 +243,9 @@ namespace Snapdi.Services.Services
 
             if (updateUserDto.IsVerify.HasValue)
                 user.IsVerify = updateUserDto.IsVerify.Value;
+
+            if (updateUserDto.CurrentLocation != null)
+                user.CurrentLocation = CreatePoint(updateUserDto.CurrentLocation.Longitude, updateUserDto.CurrentLocation.Latitude);
 
             await _userRepository.UpdateAsync(user);
             await _userRepository.SaveChangesAsync();
@@ -629,7 +639,14 @@ namespace Snapdi.Services.Services
                 CreatedAt = user.CreatedAt,
                 LocationAddress = string.IsNullOrEmpty(user.LocationAddress) ? null : user.LocationAddress,
                 LocationCity = string.IsNullOrEmpty(user.LocationCity) ? null : user.LocationCity,
-                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl
+                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl,
+                CurrentLocation = user.CurrentLocation != null 
+                    ? new LocationCoordinatesDto 
+                    { 
+                        Latitude = user.CurrentLocation.Y, 
+                        Longitude = user.CurrentLocation.X 
+                    }
+                    : null
             };
         }
 
@@ -648,7 +665,14 @@ namespace Snapdi.Services.Services
                 CreatedAt = user.CreatedAt,
                 LocationAddress = string.IsNullOrEmpty(user.LocationAddress) ? null : user.LocationAddress,
                 LocationCity = string.IsNullOrEmpty(user.LocationCity) ? null : user.LocationCity,
-                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl
+                AvatarUrl = string.IsNullOrEmpty(user.AvatarUrl) ? null : user.AvatarUrl,
+                CurrentLocation = user.CurrentLocation != null 
+                    ? new LocationCoordinatesDto 
+                    { 
+                        Latitude = user.CurrentLocation.Y, 
+                        Longitude = user.CurrentLocation.X 
+                    }
+                    : null
             };
 
             // Map photographer profile
@@ -787,6 +811,17 @@ namespace Snapdi.Services.Services
         private static string GenerateVerificationToken()
         {
             return Guid.NewGuid().ToString("N") + DateTime.UtcNow.Ticks.ToString();
+        }
+
+        /// <summary>
+        /// Creates a Point geometry for geographic coordinates.
+        /// Uses SRID 4326 (WGS84) which is standard for GPS coordinates.
+        /// Note: Point constructor takes (longitude, latitude) - longitude comes first!
+        /// </summary>
+        private static Point CreatePoint(double longitude, double latitude)
+        {
+            var geometryFactory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            return geometryFactory.CreatePoint(new Coordinate(longitude, latitude));
         }
 
         #endregion

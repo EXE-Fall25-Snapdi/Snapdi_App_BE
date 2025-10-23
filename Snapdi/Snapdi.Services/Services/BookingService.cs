@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
-using Snapdi.Services.DTOs.RequestModels;
-using Snapdi.Services.DTOs.ResponseModels;
+
 using Snapdi.Services.Hubs;
+using Snapdi.Services.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,15 +14,13 @@ namespace Snapdi.Services.Services
     public class BookingService : Interfaces.IBookingService
     {
         private readonly IBookingRepository _bookingRepo;
-        private readonly IBaseRepository<User> _userRepo;
-        private readonly IBaseRepository<BookingStatus> _statusRepo;
-        private readonly IHubContext<BookingHub> _bookingHub;
+        private readonly IUserRepository _userRepo;
+        private readonly IBookingStatusRepository _statusRepo;
 
         public BookingService(
             IBookingRepository bookingRepo,
-            IBaseRepository<User> userRepo,
-            IBaseRepository<BookingStatus> statusRepo,
-            IHubContext<BookingHub> bookingHub)
+            IUserRepository userRepo,
+            IBookingStatusRepository statusRepo)
         {
             _bookingRepo = bookingRepo;
             _userRepo = userRepo;
@@ -40,7 +38,7 @@ namespace Snapdi.Services.Services
                 throw new ArgumentException("Customer or Photographer not found");
 
             // Validate status
-            var status = await _statusRepo.FirstOrDefaultAsync(s => s.StatusName == "Pending");
+            var status = await _statusRepo.GetByNameAsync("Pending");
             if (status == null)
                 throw new ArgumentException("Default status 'Pending' not found");
 
@@ -49,23 +47,24 @@ namespace Snapdi.Services.Services
                 CustomerId = request.CustomerId,
                 PhotographerId = request.PhotographerId,
                 ScheduleAt = request.ScheduleAt,
-                LocationCity = request.LocationCity,
                 LocationAddress = request.LocationAddress,
                 Price = request.Price,
-                StatusId = status.StatusId
+                StatusId = status.StatusId,
+                Note = request.Note
             };
 
             await _bookingRepo.AddAsync(booking);
             await _bookingRepo.SaveChangesAsync();
 
-            // Reload with navigation properties for mapping
-            var created = await _bookingRepo.GetBookingWithDetailsAsync(booking.BookingId) ?? booking;
-            return MapToResponse(created);
+            // Reload booking with related entities for mapping
+            var createdBooking = await _bookingRepo.GetBookingWithDetailsAsync(booking.BookingId);
+            
+            return MapToBookingResponse(createdBooking!);
         }
 
         public async Task<BookingResponse> UpdateBookingStatusAsync(int bookingId, int newStatusId)
         {
-            var booking = await _bookingRepo.GetByIdAsync(bookingId);
+            var booking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
             if (booking == null)
                 throw new KeyNotFoundException($"Booking ID {bookingId} not found");
 
@@ -98,21 +97,46 @@ namespace Snapdi.Services.Services
             var booking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
             if (booking == null)
                 throw new KeyNotFoundException($"Booking ID {bookingId} not found");
-
-            return MapToResponse(booking);
+            return MapToBookingResponse(booking);
         }
 
-        private static BookingResponse MapToResponse(Booking booking)
+        #region Private Methods
+
+        private static BookingResponse MapToBookingResponse(Booking booking)
         {
             return new BookingResponse
             {
                 BookingId = booking.BookingId,
-                CustomerName = booking.Customer?.Name,
-                PhotographerName = booking.Photographer?.Name,
+                Customer = booking.Customer != null ? MapToBookingUserDto(booking.Customer) : null,
+                Photographer = booking.Photographer != null ? MapToBookingUserDto(booking.Photographer) : null,
                 ScheduleAt = booking.ScheduleAt,
-                StatusName = booking.Status?.StatusName,
-                Price = booking.Price
+                LocationAddress = booking.LocationAddress,
+                Status = booking.Status != null ? MapToBookingStatusDto(booking.Status) : null,
+                Price = booking.Price,
+                Note = booking.Note
             };
         }
+
+        private static BookingUserDto MapToBookingUserDto(User user)
+        {
+            return new BookingUserDto
+            {
+                UserId = user.UserId,
+                Name = user.Name,
+                Email = user.Email,
+                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone
+            };
+        }
+
+        private static BookingStatusDto MapToBookingStatusDto(BookingStatus status)
+        {
+            return new BookingStatusDto
+            {
+                StatusId = status.StatusId,
+                StatusName = status.StatusName
+            };
+        }
+
+        #endregion
     }
 }
