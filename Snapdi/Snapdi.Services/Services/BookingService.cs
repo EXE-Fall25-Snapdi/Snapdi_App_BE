@@ -107,6 +107,12 @@ namespace Snapdi.Services.Services
             return MapToBookingResponse(booking);
         }
 
+        public async Task<IEnumerable<BookingResponse>> GetMyBookingsAsync(int currentUserId)
+        {
+            var bookings = await _bookingRepo.GetBookingsForUserAsync(currentUserId);
+            return bookings.Select(MapToBookingResponse);
+        }
+
         #region Private Methods
 
         private static BookingResponse MapToBookingResponse(Booking booking)

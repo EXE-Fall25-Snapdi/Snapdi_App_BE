@@ -16,7 +16,7 @@ namespace Snapdi.Services.Hubs
         }
 
         // Cho phép client join group theo customerId
-        public async Task JoinCustomerGroup(string customerId)
+        public async Task JoinCustomerGroup(int customerId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"customer-{customerId}");
         }

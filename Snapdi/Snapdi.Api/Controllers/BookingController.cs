@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Snapdi.Api.Controllers
 {
@@ -35,6 +37,21 @@ namespace Snapdi.Api.Controllers
         {
             var result = await _bookingService.UpdateBookingStatusAsync(id, statusId);
             return Ok(result);
+        }
+
+        // GET api/booking/me - get bookings for current user from JWT
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetMyBookings()
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdValue) || !int.TryParse(userIdValue, out var userId))
+            {
+                return Unauthorized("Invalid user identity");
+            }
+
+            var bookings = await _bookingService.GetMyBookingsAsync(userId);
+            return Ok(bookings);
         }
     }
 }

@@ -12,5 +12,7 @@ namespace Snapdi.Services.Interfaces
         Task<BookingResponse> CreateBookingAsync(CreateBookingRequest request);
         Task<BookingResponse> UpdateBookingStatusAsync(int bookingId, int newStatusId);
         Task<BookingResponse> GetBookingByIdAsync(int bookingId);
+        // New: get bookings by current user id
+        Task<IEnumerable<BookingResponse>> GetMyBookingsAsync(int currentUserId);
     }
 }

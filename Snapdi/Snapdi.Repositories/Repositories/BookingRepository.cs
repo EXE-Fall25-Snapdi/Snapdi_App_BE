@@ -21,6 +21,17 @@ namespace Snapdi.Repositories.Repositories
                 .Include(b => b.Status)
                 .FirstOrDefaultAsync(b => b.BookingId == id);
         }
+
+        public async Task<IEnumerable<Booking>> GetBookingsForUserAsync(int userId)
+        {
+            return await _dbSet
+                .Where(b => b.CustomerId == userId || b.PhotographerId == userId)
+                .Include(b => b.Customer)
+                .Include(b => b.Photographer)
+                .Include(b => b.Status)
+                .OrderByDescending(b => b.ScheduleAt)
+                .ToListAsync();
+        }
     } 
 }
 
