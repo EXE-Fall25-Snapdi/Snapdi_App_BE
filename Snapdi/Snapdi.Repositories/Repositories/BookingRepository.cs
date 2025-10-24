@@ -32,6 +32,27 @@ namespace Snapdi.Repositories.Repositories
                 .OrderByDescending(b => b.ScheduleAt)
                 .ToListAsync();
         }
+
+        public async Task<(IEnumerable<Booking> Bookings, int TotalCount)> GetBookingsForUserPagedAsync(int userId, int page, int pageSize)
+        {
+            var query = _dbSet
+                .Where(b => b.CustomerId == userId || b.PhotographerId == userId)
+                .Include(b => b.Customer)
+                .Include(b => b.Photographer)
+                .Include(b => b.Status)
+                // Sort by BookingId desc as requested
+                .OrderByDescending(b => b.BookingId)
+                .AsQueryable();
+
+            var total = await query.CountAsync();
+
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
+        }
     } 
 }
 

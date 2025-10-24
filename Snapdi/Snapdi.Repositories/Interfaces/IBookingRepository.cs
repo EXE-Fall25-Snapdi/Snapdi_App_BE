@@ -12,5 +12,7 @@ namespace Snapdi.Repositories.Interfaces
         Task<Booking?> GetBookingWithDetailsAsync(int id);
         // New: get all bookings for a user (as customer or photographer)
         Task<IEnumerable<Booking>> GetBookingsForUserAsync(int userId);
+        // New paged method: get bookings for a user with pagination, sorted by BookingId desc
+        Task<(IEnumerable<Booking> Bookings, int TotalCount)> GetBookingsForUserPagedAsync(int userId, int page, int pageSize);
     }
 }
