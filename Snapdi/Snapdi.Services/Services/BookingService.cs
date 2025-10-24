@@ -107,6 +107,27 @@ namespace Snapdi.Services.Services
             return MapToBookingResponse(booking);
         }
 
+        public async Task<PagedResultDto<BookingResponse>> GetMyBookingsAsync(int currentUserId, int page, int pageSize)
+        {
+            // Validate pagination
+            var currentPage = Math.Max(1, page);
+            var currentPageSize = Math.Clamp(pageSize, 1, 100);
+
+            var (bookings, totalCount) = await _bookingRepo.GetBookingsForUserPagedAsync(currentUserId, currentPage, currentPageSize);
+            var items = bookings.Select(MapToBookingResponse).ToList();
+
+            var totalPages = (int)Math.Ceiling((double)totalCount / currentPageSize);
+
+            return new PagedResultDto<BookingResponse>
+            {
+                Items = items,
+                CurrentPage = currentPage,
+                PageSize = currentPageSize,
+                TotalItems = totalCount,
+                TotalPages = totalPages
+            };
+        }
+
         #region Private Methods
 
         private static BookingResponse MapToBookingResponse(Booking booking)
