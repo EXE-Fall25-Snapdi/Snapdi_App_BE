@@ -33,6 +33,9 @@ public partial class Payment
     [StringLength(255)]
     public string? TransactionReference { get; set; }
 
+    [StringLength(1000)]
+    public string? PaymentImageUrl { get; set; }
+
     [Column("PaymentStatusID")]
     public int? PaymentStatusId { get; set; }
 

@@ -574,7 +574,39 @@ namespace Snapdi.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Find snappers nearby for map display (Public endpoint)
+        /// Returns photographers within a specified radius of a geographic location.
+        /// Optimized for displaying photographers on a map.
+        /// </summary>
+        /// <param name="findSnappersNearbyDto">Search parameters including coordinates and radius</param>
+        /// <returns>List of nearby photographers with distance information</returns>
+        [HttpPost("snappers/nearby")]
+        public async Task<ActionResult<FindSnappersNearbyResultDto>> FindSnappersNearby(FindSnappersNearbyDto findSnappersNearbyDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { 
+                        error = "Validation failed", 
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
 
+                var result = await _userService.FindSnappersNearbyAsync(findSnappersNearbyDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while finding nearby snappers", details = ex.Message });
+            }
+        }
 
 
 
