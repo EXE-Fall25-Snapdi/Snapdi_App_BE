@@ -18,6 +18,7 @@ namespace Snapdi.Repositories.Repositories
             return await _dbSet
                 .Include(b => b.Customer)
                 .Include(b => b.Photographer)
+                    .ThenInclude(p => p.PhotographerProfile)
                 .Include(b => b.Status)
                 .FirstOrDefaultAsync(b => b.BookingId == id);
         }
@@ -28,6 +29,7 @@ namespace Snapdi.Repositories.Repositories
                 .Where(b => b.CustomerId == userId || b.PhotographerId == userId)
                 .Include(b => b.Customer)
                 .Include(b => b.Photographer)
+                    .ThenInclude(p => p.PhotographerProfile)
                 .Include(b => b.Status)
                 .OrderByDescending(b => b.ScheduleAt)
                 .ToListAsync();
@@ -39,6 +41,7 @@ namespace Snapdi.Repositories.Repositories
                 .Where(b => b.CustomerId == userId || b.PhotographerId == userId)
                 .Include(b => b.Customer)
                 .Include(b => b.Photographer)
+                    .ThenInclude(p => p.PhotographerProfile)
                 .Include(b => b.Status)
                 // Sort by BookingId desc as requested
                 .OrderByDescending(b => b.BookingId)

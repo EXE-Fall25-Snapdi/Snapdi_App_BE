@@ -136,7 +136,7 @@ namespace Snapdi.Services.Services
             {
                 BookingId = booking.BookingId,
                 Customer = booking.Customer != null ? MapToBookingUserDto(booking.Customer) : null,
-                Photographer = booking.Photographer != null ? MapToBookingUserDto(booking.Photographer) : null,
+                Photographer = booking.Photographer != null ? MapToBookingPhotographerDto(booking.Photographer) : null,
                 ScheduleAt = booking.ScheduleAt,
                 LocationAddress = booking.LocationAddress,
                 Status = booking.Status != null ? MapToBookingStatusDto(booking.Status) : null,
@@ -154,6 +154,23 @@ namespace Snapdi.Services.Services
                 Email = user.Email,
                 Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone
             };
+        }
+
+        private static BookingPhotographerDto MapToBookingPhotographerDto(User user)
+        {
+            var dto = new BookingPhotographerDto
+            {
+                UserId = user.UserId,
+                Name = user.Name,
+                Email = user.Email,
+                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone,
+                AvgRating = user.PhotographerProfile?.AvgRating,
+                IsAvailable = user.PhotographerProfile?.IsAvailable ?? false,
+                LevelPhotographer = user.PhotographerProfile?.LevelPhotographer,
+                PhotoPrice = (double?)user.PhotographerProfile?.PhotoPrice,
+                AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl) ? null : user.AvatarUrl
+            };
+            return dto;
         }
 
         private static BookingStatusDto MapToBookingStatusDto(BookingStatus status)
