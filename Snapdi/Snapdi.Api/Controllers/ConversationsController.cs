@@ -73,7 +73,7 @@ namespace Snapdi.Api.Controllers
                 var userId = GetUserId();
                 var messageDto = await _messageService.SendMessageAsync(id, userId, request.Content);
 
-                // G?i thông báo qua SignalR
+                // G?i thï¿½ng bï¿½o qua SignalR
                 await hub.Clients.Group($"conversation:{id}").SendCoreAsync("messageReceived", new object[] { messageDto });
 
                 return Ok(messageDto);
@@ -102,6 +102,30 @@ namespace Snapdi.Api.Controllers
                 return Ok(new { conversationId });
             }
             catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("with-user/{otherUserId}")]
+        public async Task<ActionResult> GetOrCreateUserConversation(int otherUserId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (otherUserId <= 0)
+                {
+                    return BadRequest("Invalid user ID");
+                }
+
+                var conversationId = await _messageService.GetOrCreateUserConversationAsync(userId, otherUserId);
+                return Ok(new { conversationId });
+            }
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }

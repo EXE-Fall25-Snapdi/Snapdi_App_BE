@@ -16,6 +16,7 @@ namespace Snapdi.Services.Interfaces
             Task<IEnumerable<MessageDto>> GetConversationMessagesAsync(int conversationId, int userId, int? beforeMessageId = null, int take = 50);
             Task<MessageDto> SendMessageAsync(int conversationId, int senderId, string content);
             Task<int> GetOrCreateAdminConversationAsync(int userId);
+            Task<int> GetOrCreateUserConversationAsync(int userId1, int userId2);
             Task<bool> IsUserParticipantAsync(int conversationId, int userId);
             Task MarkMessageAsReadAsync(int conversationId, int userId, int messageId);
         }
