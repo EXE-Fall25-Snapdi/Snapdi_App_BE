@@ -72,5 +72,10 @@ namespace Snapdi.Services.Interfaces
         /// Get detailed booking statistics with status names and percentages
         /// </summary>
         Task<BookingStatisticsResponseDto> GetBookingStatisticsAsync();
+
+        /// <summary>
+        /// Get bookings by current user id with pagination
+        /// </summary>
+        Task<PagedResultDto<BookingResponse>> GetMyBookingsAsync(int currentUserId, int page, int pageSize);
     }
 }

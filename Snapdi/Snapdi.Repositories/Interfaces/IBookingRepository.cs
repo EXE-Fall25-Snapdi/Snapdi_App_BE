@@ -66,5 +66,15 @@ namespace Snapdi.Repositories.Interfaces
         /// Get bookings count by status with status names
         /// </summary>
         Task<List<(int StatusId, string StatusName, int Count)>> GetBookingsCountByStatusWithNamesAsync();
+
+        /// <summary>
+        /// Get all bookings for a user (as customer or photographer)
+        /// </summary>
+        Task<IEnumerable<Booking>> GetBookingsForUserAsync(int userId);
+
+        /// <summary>
+        /// Get bookings for a user with pagination, sorted by BookingId desc
+        /// </summary>
+        Task<(IEnumerable<Booking> Bookings, int TotalCount)> GetBookingsForUserPagedAsync(int userId, int page, int pageSize);
     }
 }

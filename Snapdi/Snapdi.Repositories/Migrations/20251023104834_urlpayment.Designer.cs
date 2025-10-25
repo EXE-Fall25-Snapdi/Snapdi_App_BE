@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Snapdi.Repositories.Context;
@@ -12,9 +13,11 @@ using Snapdi.Repositories.Context;
 namespace Snapdi.Repositories.Migrations
 {
     [DbContext(typeof(SnapdiDbV2Context))]
-    partial class SnapdiDbV2ContextModelSnapshot : ModelSnapshot
+    [Migration("20251023104834_urlpayment")]
+    partial class urlpayment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -118,10 +121,6 @@ namespace Snapdi.Repositories.Migrations
                     b.Property<string>("Note")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("PhotoLink")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int?>("PhotographerId")
                         .HasColumnType("int")
@@ -447,12 +446,6 @@ namespace Snapdi.Repositories.Migrations
                         .HasColumnType("int")
                         .HasColumnName("PhotoTypeID");
 
-                    b.Property<double?>("PhotoPrice")
-                        .HasColumnType("float");
-
-                    b.Property<int?>("Time")
-                        .HasColumnType("int");
-
                     b.HasKey("UserId", "PhotoTypeId")
                         .HasName("PK__Photogra__PhotographerPhotoType");
 
@@ -484,6 +477,9 @@ namespace Snapdi.Repositories.Migrations
                     b.Property<string>("LevelPhotographer")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("PhotoPrice")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("WorkLocation")
                         .HasMaxLength(255)

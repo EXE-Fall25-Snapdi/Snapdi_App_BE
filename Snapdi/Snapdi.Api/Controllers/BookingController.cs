@@ -560,5 +560,20 @@ namespace Snapdi.Api.Controllers
             var result = await _bookingService.UpdateBookingStatusAsync(id, statusId);
             return Ok(result);
         }
+
+        // GET api/booking/me - get bookings for current user from JWT with pagination
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetMyBookings([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdValue) || !int.TryParse(userIdValue, out var userId))
+            {
+                return Unauthorized("Invalid user identity");
+            }
+
+            var bookings = await _bookingService.GetMyBookingsAsync(userId, page, pageSize);
+            return Ok(bookings);
+        }
     }
 }

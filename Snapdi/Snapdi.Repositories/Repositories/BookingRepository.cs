@@ -27,6 +27,7 @@ namespace Snapdi.Repositories.Repositories
             return await _context.Bookings
                 .Include(b => b.Customer)
                 .Include(b => b.Photographer)
+                    .ThenInclude(p => p.PhotographerProfile)
                 .Include(b => b.Status)
                 .Where(b => b.CustomerId == customerId)
                 .OrderByDescending(b => b.ScheduleAt)
@@ -40,6 +41,18 @@ namespace Snapdi.Repositories.Repositories
                 .Include(b => b.Photographer)
                 .Include(b => b.Status)
                 .Where(b => b.PhotographerId == photographerId)
+                .OrderByDescending(b => b.ScheduleAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Booking>> GetBookingsForUserAsync(int userId)
+        {
+            return await _dbSet
+                .Where(b => b.CustomerId == userId || b.PhotographerId == userId)
+                .Include(b => b.Customer)
+                .Include(b => b.Photographer)
+                    .ThenInclude(p => p.PhotographerProfile)
+                .Include(b => b.Status)
                 .OrderByDescending(b => b.ScheduleAt)
                 .ToListAsync();
         }
@@ -179,6 +192,28 @@ namespace Snapdi.Repositories.Repositories
                 .ToListAsync();
 
             return (bookings, totalCount);
+        }
+
+        public async Task<(IEnumerable<Booking> Bookings, int TotalCount)> GetBookingsForUserPagedAsync(int userId, int page, int pageSize)
+        {
+            var query = _dbSet
+                .Where(b => b.CustomerId == userId || b.PhotographerId == userId)
+                .Include(b => b.Customer)
+                .Include(b => b.Photographer)
+                    .ThenInclude(p => p.PhotographerProfile)
+                .Include(b => b.Status)
+                // Sort by BookingId desc as requested
+                .OrderByDescending(b => b.BookingId)
+                .AsQueryable();
+
+            var total = await query.CountAsync();
+
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
         }
 
         public async Task UpdateBookingStatusAsync(int bookingId, int statusId)

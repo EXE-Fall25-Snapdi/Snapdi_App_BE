@@ -15,6 +15,30 @@ namespace Snapdi.Services.DTOs
         public string? WorkLocation { get; set; }
 
         /// <summary>
+        /// Latitude of the search center point (optional)
+        /// Required when using radius-based search
+        /// Example: 10.8231 (Ho Chi Minh City)
+        /// </summary>
+        [Range(-90, 90, ErrorMessage = "Latitude must be between -90 and 90")]
+        public double? Latitude { get; set; }
+
+        /// <summary>
+        /// Longitude of the search center point (optional)
+        /// Required when using radius-based search
+        /// Example: 106.6297 (Ho Chi Minh City)
+        /// </summary>
+        [Range(-180, 180, ErrorMessage = "Longitude must be between -180 and 180")]
+        public double? Longitude { get; set; }
+
+        /// <summary>
+        /// Search radius in kilometers (optional, default: 5)
+        /// Filters photographers within this distance from the specified location
+        /// Only used when Latitude and Longitude are provided
+        /// </summary>
+        [Range(0.1, 100, ErrorMessage = "Radius must be between 0.1 and 100 kilometers")]
+        public double? RadiusInKm { get; set; } = 5;
+
+        /// <summary>
         /// Minimum price range for photo services (optional)
         /// Filters photographers with PhotoPrice >= MinPrice
         /// </summary>
@@ -59,10 +83,11 @@ namespace Snapdi.Services.DTOs
         public int PageSize { get; set; } = 10;
 
         /// <summary>
-        /// Sort by field: "name", "rating", "worklocation", "price"
+        /// Sort by field: "name", "rating", "worklocation", "price", "distance"
+        /// Note: "distance" only works when using radius-based search
         /// </summary>
-        [RegularExpression(@"^(name|rating|worklocation|price)$", 
-            ErrorMessage = "Sort by must be 'name', 'rating', 'worklocation', or 'price'")]
+        [RegularExpression(@"^(name|rating|worklocation|price|distance)$", 
+            ErrorMessage = "Sort by must be 'name', 'rating', 'worklocation', 'price', or 'distance'")]
         public string? SortBy { get; set; } = "rating";
 
         /// <summary>
@@ -145,11 +170,14 @@ namespace Snapdi.Services.DTOs
         public string? YearsOfExperience { get; set; }
         public string? EquipmentDescription { get; set; }
         public string? Description { get; set; }
-        public double? PhotoPrice { get; set; }
         public string? WorkLocation { get; set; }
 
-        // Photo Types Information
-        public List<PhotoTypeDto>? PhotoTypes { get; set; }
+        // Location Information
+        public LocationCoordinatesDto? CurrentLocation { get; set; }
+        public double? DistanceInKm { get; set; } // Distance from search point (only populated in nearby search)
+
+        // Photo Types Information with pricing
+        public List<PhotoTypeWithPricingDto>? PhotoTypes { get; set; }
 
         // Style Information
         public List<StyleDto>? Styles { get; set; }
@@ -157,23 +185,5 @@ namespace Snapdi.Services.DTOs
         // Additional Info
         public int PortfolioCount { get; set; }
         public List<string>? PortfolioUrls { get; set; }
-    }
-
-    /// <summary>
-    /// DTO for photography style information
-    /// </summary>
-    public class StyleDto
-    {
-        public int StyleId { get; set; }
-        public string StyleName { get; set; } = null!;
-    }
-
-    /// <summary>
-    /// DTO for photo type information
-    /// </summary>
-    public class PhotoTypeDto
-    {
-        public int PhotoTypeId { get; set; }
-        public string PhotoTypeName { get; set; } = null!;
     }
 }

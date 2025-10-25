@@ -164,6 +164,7 @@ builder.Services.AddScoped<IBookingStatusRepository, BookingStatusRepository>();
 builder.Services.AddScoped<IStyleRepository, StyleRepository>();
 builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleRepository>();
 builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();
+builder.Services.AddScoped<IPhotographerPhotoTypeRepository, PhotographerPhotoTypeRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -180,6 +181,7 @@ builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IStyleService, StyleService>();
 builder.Services.AddScoped<IPhotographerStyleService, PhotographerStyleService>();
 builder.Services.AddScoped<IPhotoTypeService, PhotoTypeService>();
+builder.Services.AddScoped<IPhotographerPhotoTypeService, PhotographerPhotoTypeService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();

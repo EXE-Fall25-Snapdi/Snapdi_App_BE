@@ -490,18 +490,20 @@ namespace Snapdi.Repositories.Repositories
                 query = query.Where(u => u.PhotographerProfile!.AvgRating <= maxRating.Value);
             }
 
-            // Apply price range filters
+            // Apply price range filters - check if photographer has any photo type within the price range
             if (minPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value >= minPrice.Value);
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => 
+     ppt.PhotoPrice.HasValue && 
+  ppt.PhotoPrice.Value >= minPrice.Value));
             }
 
             if (maxPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value <= maxPrice.Value);
-            }
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => 
+         ppt.PhotoPrice.HasValue && 
+      ppt.PhotoPrice.Value <= maxPrice.Value));
+      }
 
             // Apply years of experience filter
             if (!string.IsNullOrEmpty(yearsOfExperience))
@@ -554,12 +556,14 @@ namespace Snapdi.Repositories.Repositories
                     "name" => isDescending ? query.OrderByDescending(u => u.Name) : query.OrderBy(u => u.Name),
                     "email" => isDescending ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
                     "rating" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.AvgRating ?? 0) : query.OrderBy(u => u.PhotographerProfile!.AvgRating ?? 0),
-                    "price" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.PhotoPrice ?? 0) : query.OrderBy(u => u.PhotographerProfile!.PhotoPrice ?? 0),
-                    "createdat" => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
-                    "yearsofexperience" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.YearsOfExperience ?? "") : query.OrderBy(u => u.PhotographerProfile!.YearsOfExperience ?? ""),
-                    "worklocation" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.WorkLocation ?? "") : query.OrderBy(u => u.PhotographerProfile!.WorkLocation ?? ""),
-                    _ => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt)
-                };
+                    "price" => isDescending ? 
+     query.OrderByDescending(u => u.PhotographerProfile!.PhotographerPhotoTypes.Min(ppt => ppt.PhotoPrice) ?? 0) : 
+  query.OrderBy(u => u.PhotographerProfile!.PhotographerPhotoTypes.Min(ppt => ppt.PhotoPrice) ?? 0),
+      "createdat" => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
+        "yearsofexperience" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.YearsOfExperience ?? "") : query.OrderBy(u => u.PhotographerProfile!.YearsOfExperience ?? ""),
+           "worklocation" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.WorkLocation ?? "") : query.OrderBy(u => u.PhotographerProfile!.WorkLocation ?? ""),
+      _ => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt)
+     };
             }
             else
             {
@@ -576,6 +580,106 @@ namespace Snapdi.Repositories.Repositories
                 .ToListAsync();
 
             return (photographers, totalCount);
+        }
+
+        public async Task<List<(User User, double DistanceInKm)>> FindSnappersNearbyAsync(
+            double latitude,
+            double longitude,
+            double radiusInKm,
+            int limit,
+            bool? isAvailable = null,
+            List<int>? photoTypeIds = null,
+            List<int>? styleIds = null,
+            double? minPrice = null,
+            double? maxPrice = null)
+        {
+            const int PHOTOGRAPHER_ROLE_ID = 3;
+            
+            // Create search point with SRID 4326 (WGS84 - standard for GPS coordinates)
+            var geometryFactory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            var searchPoint = geometryFactory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(longitude, latitude));
+            
+            // Convert radius from kilometers to meters (STDistance returns meters)
+            var radiusInMeters = radiusInKm * 1000;
+
+            // Build query for photographers with location data
+            var query = _context.Users
+                .Include(u => u.Role)
+                .Include(u => u.PhotographerProfile)
+                    .ThenInclude(pp => pp.PhotographerStyles)
+                        .ThenInclude(ps => ps.Style)
+                .Include(u => u.PhotographerProfile)
+                    .ThenInclude(pp => pp.PhotographerPhotoTypes)
+                        .ThenInclude(ppt => ppt.PhotoType)
+                .Include(u => u.PhotoPortfolios)
+                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
+                           u.PhotographerProfile != null &&
+                           u.CurrentLocation != null && // Must have location
+                           u.IsActive == true && // Only active photographers
+                           u.IsVerify == true) // Only verified photographers
+                .AsQueryable();
+
+            // Apply availability filter
+            if (isAvailable.HasValue)
+            {
+                query = query.Where(u => u.PhotographerProfile!.IsAvailable == isAvailable.Value);
+            }
+
+            // Apply photo type filter - photographer must have ALL specified photo types
+            if (photoTypeIds != null && photoTypeIds.Any())
+            {
+                foreach (var photoTypeId in photoTypeIds)
+                {
+                    var currentPhotoTypeId = photoTypeId;
+                    query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => ppt.PhotoTypeId == currentPhotoTypeId));
+                }
+            }
+
+            // Apply style filter - photographer must have ALL specified styles
+            if (styleIds != null && styleIds.Any())
+            {
+                foreach (var styleId in styleIds)
+                {
+                    var currentStyleId = styleId;
+                    query = query.Where(u => u.PhotographerProfile!.PhotographerStyles.Any(ps => ps.StyleId == currentStyleId));
+                }
+            }
+
+            // Apply price range filters - check if photographer has any photo type within the price range
+            if (minPrice.HasValue)
+            {
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => 
+     ppt.PhotoPrice.HasValue && 
+  ppt.PhotoPrice.Value >= minPrice.Value));
+            }
+
+            if (maxPrice.HasValue)
+            {
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => 
+         ppt.PhotoPrice.HasValue && 
+      ppt.PhotoPrice.Value <= maxPrice.Value));
+      }
+
+            // Get all photographers matching filters
+            var allPhotographers = await query.ToListAsync();
+
+            Console.WriteLine($"Found {allPhotographers.Count} photographers matching filters before distance calculation.");
+            Console.WriteLine($"Found photographers: {string.Join(", ", allPhotographers.Select(p => p.UserId))}");
+
+            // Calculate distances and filter by radius
+            var photographersWithDistance = allPhotographers
+                .Select(u => new
+                {
+                    User = u,
+                    DistanceInMeters = u.CurrentLocation!.Distance(searchPoint)
+                })
+                .Where(x => x.DistanceInMeters <= radiusInMeters)
+                .OrderBy(x => x.DistanceInMeters) // Sort by distance (nearest first)
+                .Take(limit)
+                .Select(x => (x.User, DistanceInKm: Math.Round(x.DistanceInMeters / 1000, 2))) // Convert to km and round to 2 decimals
+                .ToList();
+
+            return photographersWithDistance;
         }
 
         public override async Task<User?> GetByIdAsync(int id)

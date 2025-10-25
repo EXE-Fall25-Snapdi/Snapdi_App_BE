@@ -86,7 +86,6 @@ namespace Snapdi.Services.Services
             return MapToBookingResponse(booking);
         }
 
-        // New methods for complete implementation
         public async Task<IEnumerable<BookingDto>> GetAllBookingsAsync()
         {
             var bookings = await _bookingRepo.GetAllAsync();
@@ -260,6 +259,27 @@ namespace Snapdi.Services.Services
             };
         }
 
+        public async Task<PagedResultDto<BookingResponse>> GetMyBookingsAsync(int currentUserId, int page, int pageSize)
+        {
+            // Validate pagination
+            var currentPage = Math.Max(1, page);
+            var currentPageSize = Math.Clamp(pageSize, 1, 100);
+
+            var (bookings, totalCount) = await _bookingRepo.GetBookingsForUserPagedAsync(currentUserId, currentPage, currentPageSize);
+            var items = bookings.Select(MapToBookingResponse).ToList();
+
+            var totalPages = (int)Math.Ceiling((double)totalCount / currentPageSize);
+
+            return new PagedResultDto<BookingResponse>
+            {
+                Items = items,
+                CurrentPage = currentPage,
+                PageSize = currentPageSize,
+                TotalItems = totalCount,
+                TotalPages = totalPages
+            };
+        }
+
         #region Private Methods
 
         private static BookingDto MapToDto(Booking booking)
@@ -290,12 +310,13 @@ namespace Snapdi.Services.Services
             {
                 BookingId = booking.BookingId,
                 Customer = booking.Customer != null ? MapToBookingUserDto(booking.Customer) : null,
-                Photographer = booking.Photographer != null ? MapToBookingUserDto(booking.Photographer) : null,
+                Photographer = booking.Photographer != null ? MapToBookingPhotographerDto(booking.Photographer) : null,
                 ScheduleAt = booking.ScheduleAt,
                 LocationAddress = booking.LocationAddress,
                 Status = booking.Status != null ? MapToBookingStatusDto(booking.Status) : null,
                 Price = booking.Price,
-                Note = booking.Note
+                Note = booking.Note,
+                PhotoLink = booking.PhotoLink
             };
         }
 
@@ -308,6 +329,23 @@ namespace Snapdi.Services.Services
                 Email = user.Email,
                 Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone
             };
+        }
+
+        private static BookingPhotographerDto MapToBookingPhotographerDto(User user)
+        {
+            var dto = new BookingPhotographerDto
+            {
+                UserId = user.UserId,
+                Name = user.Name,
+                Email = user.Email,
+                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone,
+                AvgRating = user.PhotographerProfile?.AvgRating,
+                IsAvailable = user.PhotographerProfile?.IsAvailable ?? false,
+                LevelPhotographer = user.PhotographerProfile?.LevelPhotographer,
+                PhotoPrice = null, // PhotoPrice is not available in PhotographerProfile model
+                AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl) ? null : user.AvatarUrl
+            };
+            return dto;
         }
 
         private static BookingStatusDto MapToBookingStatusDto(BookingStatus status)
