@@ -183,8 +183,6 @@ public partial class SnapdiDbV2Context : DbContext
 
             entity.Property(e => e.UserId).ValueGeneratedNever();
 
-            entity.Property(e => e.PhotoPrice).HasColumnType("decimal(18,2)");
-
             entity.HasOne(d => d.User).WithOne(p => p.PhotographerProfile).HasConstraintName("FK__Photograp__UserI__4AB81AF0");
         });
 

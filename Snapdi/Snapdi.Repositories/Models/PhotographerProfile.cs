@@ -29,8 +29,6 @@ public partial class PhotographerProfile
     [StringLength(50)]
     public string? LevelPhotographer { get; set; }
 
-    public double? PhotoPrice { get; set; }
-
     [StringLength(255)]
     public string? WorkLocation { get; set; }
 

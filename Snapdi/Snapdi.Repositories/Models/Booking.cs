@@ -33,6 +33,9 @@ public partial class Booking
     [StringLength(1000)]
     public string? Note { get; set; }
 
+    [StringLength(500)]
+    public string? PhotoLink { get; set; }
+
     [ForeignKey("CustomerId")]
     [InverseProperty("BookingCustomers")]
     public virtual User? Customer { get; set; }

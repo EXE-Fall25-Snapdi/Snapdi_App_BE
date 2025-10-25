@@ -120,7 +120,8 @@ namespace Snapdi.Services.Services
                 LocationAddress = booking.LocationAddress,
                 Status = booking.Status != null ? MapToBookingStatusDto(booking.Status) : null,
                 Price = booking.Price,
-                Note = booking.Note
+                Note = booking.Note,
+                PhotoLink = booking.PhotoLink
             };
         }
 

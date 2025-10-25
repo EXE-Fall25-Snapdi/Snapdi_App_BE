@@ -18,6 +18,10 @@ public partial class PhotographerPhotoType
     [Column("PhotoTypeID")]
     public int PhotoTypeId { get; set; }
 
+    public double? PhotoPrice { get; set; }
+
+    public int? Time { get; set; }
+
     [ForeignKey("UserId")]
     [InverseProperty("PhotographerPhotoTypes")]
     public virtual PhotographerProfile PhotographerProfile { get; set; } = null!;
