@@ -6,11 +6,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Snapdi.Api.Services;
+using Snapdi.Api.Hubs;
 using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
-using Snapdi.Services.Hubs;
 using Snapdi.Services.Interfaces;
 using Snapdi.Services.Interfaces.Snapdi.Services.Interfaces;
 using Snapdi.Services.Models;
@@ -64,6 +64,7 @@ if (jwtKey.Length < 32)
     throw new InvalidOperationException("JWT_KEY must be at least 32 characters long for security.");
 }
 
+// Add CORS services with SignalR support
 // Add CORS services
 builder.Services.AddCors(options =>
 {
@@ -185,8 +186,13 @@ builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
 
-// SignalR for realtime features
-builder.Services.AddSignalR();
+// SignalR for realtime features with extended options
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
 
 // Configure Swagger/OpenAPI with JWT authentication
 builder.Services.AddEndpointsApiExplorer();
@@ -196,7 +202,7 @@ builder.Services.AddSwaggerGen(c =>
     { 
         Title = "Snapdi API", 
         Version = "v1",
-        Description = "API for Snapdi Photography Platform",
+        Description = "API for Snapdi Photography Platform with Real-time Booking Updates",
         Contact = new OpenApiContact
         {
             Name = "Snapdi Team",
@@ -262,7 +268,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Enable CORS
+// Enable CORS (must be before Authentication and Authorization)
 app.UseCors("AllowFlutterApp");
 
 app.UseAuthentication();
@@ -272,6 +278,6 @@ app.MapControllers();
 
 // Map SignalR hubs
 app.MapHub<Snapdi.Api.Hubs.ChatHub>("/hubs/chat");
-app.MapHub<BookingHub>("/hubs/booking");
+app.MapHub<Snapdi.Api.Hubs.BookingHub>("/hubs/booking");
 
 app.Run();

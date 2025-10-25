@@ -14,6 +14,8 @@ namespace Snapdi.Repositories.Interfaces
         Task<bool> IsUserParticipantAsync(int conversationId, int userId);
         Task<int?> GetSupportConversationAsync(int userId, int adminUserId);
         Task<int> CreateSupportConversationAsync(int userId, int adminUserId);
+        Task<int?> GetDirectConversationAsync(int userId1, int userId2);
+        Task<int> CreateDirectConversationAsync(int userId1, int userId2);
         Task UpdateLastReadMessageAsync(int conversationId, int userId, int messageId);
         Task<IEnumerable<ConversationParticipant>> GetConversationParticipantsAsync(int conversationId);
     }
