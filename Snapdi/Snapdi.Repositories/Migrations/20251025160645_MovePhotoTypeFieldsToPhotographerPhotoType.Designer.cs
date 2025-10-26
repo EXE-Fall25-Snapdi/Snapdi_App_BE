@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Snapdi.Repositories.Context;
@@ -12,9 +13,11 @@ using Snapdi.Repositories.Context;
 namespace Snapdi.Repositories.Migrations
 {
     [DbContext(typeof(SnapdiDbV2Context))]
-    partial class SnapdiDbV2ContextModelSnapshot : ModelSnapshot
+    [Migration("20251025160645_MovePhotoTypeFieldsToPhotographerPhotoType")]
+    partial class MovePhotoTypeFieldsToPhotographerPhotoType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -342,10 +345,6 @@ namespace Snapdi.Repositories.Migrations
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime");
-
-                    b.Property<string>("PaymentImageUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int?>("PaymentStatusId")
                         .HasColumnType("int")

@@ -22,5 +22,10 @@ namespace Snapdi.Services.DTOs
 
         public bool? IsActive { get; set; }
         public bool? IsVerify { get; set; }
+
+        /// <summary>
+        /// Update current location coordinates
+        /// </summary>
+        public LocationCoordinatesDto? CurrentLocation { get; set; }
     }
 }

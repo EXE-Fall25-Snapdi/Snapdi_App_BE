@@ -15,8 +15,7 @@ namespace Snapdi.Services.DTOs
         public bool IsAvailable { get; set; }
         public string? Description { get; set; }
         public string? LevelPhotographer { get; set; }
-        public double? PhotoPrice { get; set; }
-        public List<PhotoTypeDto>? PhotoTypes { get; set; }
+        public List<PhotoTypeWithPricingResponseDto>? PhotoTypes { get; set; }
         public string? WorkLocation { get; set; }
         /// <summary>
         /// List of photography styles associated with this photographer
@@ -38,7 +37,6 @@ namespace Snapdi.Services.DTOs
         public bool IsAvailable { get; set; } = true;
         public string? Description { get; set; }
         public string? LevelPhotographer { get; set; } = string.Empty;
-        public double? PhotoPrice { get; set; }
         public List<int>? PhotoTypeIds { get; set; }
         public string? WorkLocation { get; set; }
     }
@@ -50,7 +48,6 @@ namespace Snapdi.Services.DTOs
         public double? AvgRating { get; set; }
         public bool? IsAvailable { get; set; }
         public string? Description { get; set; }
-        public double? PhotoPrice { get; set; }
         public List<int>? PhotoTypeIds { get; set; }
         public string? WorkLocation { get; set; }
     }

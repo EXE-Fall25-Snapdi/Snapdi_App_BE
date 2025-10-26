@@ -63,6 +63,7 @@ INSERT INTO Styles (StyleName) VALUES
 INSERT INTO BookingStatus (StatusName) VALUES
 ('Pending'),
 ('Confirmed'),
+('Paid'),
 ('Completed'),
 ('Cancelled');
 

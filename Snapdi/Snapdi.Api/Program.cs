@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Snapdi.Api.Services;
+using Snapdi.Api.Hubs;
 using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
@@ -63,6 +64,7 @@ if (jwtKey.Length < 32)
     throw new InvalidOperationException("JWT_KEY must be at least 32 characters long for security.");
 }
 
+// Add CORS services with SignalR support
 // Add CORS services
 builder.Services.AddCors(options =>
 {
@@ -111,7 +113,7 @@ builder.Services.AddAuthentication(options =>
 
 // Add DbContext
 builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, x => x.UseNetTopologySuite()));
 
 // Configure settings through DI
 builder.Services.Configure<AppSettings>(options =>
@@ -162,6 +164,7 @@ builder.Services.AddScoped<IBookingStatusRepository, BookingStatusRepository>();
 builder.Services.AddScoped<IStyleRepository, StyleRepository>();
 builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleRepository>();
 builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();
+builder.Services.AddScoped<IPhotographerPhotoTypeRepository, PhotographerPhotoTypeRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -178,12 +181,18 @@ builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IStyleService, StyleService>();
 builder.Services.AddScoped<IPhotographerStyleService, PhotographerStyleService>();
 builder.Services.AddScoped<IPhotoTypeService, PhotoTypeService>();
+builder.Services.AddScoped<IPhotographerPhotoTypeService, PhotographerPhotoTypeService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
 
-// SignalR for realtime features
-builder.Services.AddSignalR();
+// SignalR for realtime features with extended options
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
 
 // Configure Swagger/OpenAPI with JWT authentication
 builder.Services.AddEndpointsApiExplorer();
@@ -193,7 +202,7 @@ builder.Services.AddSwaggerGen(c =>
     { 
         Title = "Snapdi API", 
         Version = "v1",
-        Description = "API for Snapdi Photography Platform",
+        Description = "API for Snapdi Photography Platform with Real-time Booking Updates",
         Contact = new OpenApiContact
         {
             Name = "Snapdi Team",
@@ -259,7 +268,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Enable CORS
+// Enable CORS (must be before Authentication and Authorization)
 app.UseCors("AllowFlutterApp");
 
 app.UseAuthentication();
@@ -269,5 +278,6 @@ app.MapControllers();
 
 // Map SignalR hubs
 app.MapHub<Snapdi.Api.Hubs.ChatHub>("/hubs/chat");
+app.MapHub<Snapdi.Api.Hubs.BookingHub>("/hubs/booking");
 
 app.Run();

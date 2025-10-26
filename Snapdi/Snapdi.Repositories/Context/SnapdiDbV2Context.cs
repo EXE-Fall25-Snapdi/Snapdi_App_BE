@@ -59,8 +59,18 @@ public partial class SnapdiDbV2Context : DbContext
     public virtual DbSet<VoucherUsage> VoucherUsages { get; set; }
 
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Enable NetTopologySuite for spatial data support
+            optionsBuilder.UseSqlServer(o => o.UseNetTopologySuite());
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        
         modelBuilder.Entity<Blog>(entity =>
         {
             entity.HasKey(e => e.BlogId).HasName("PK__Blog__54379E506DDA2403");
@@ -173,8 +183,6 @@ public partial class SnapdiDbV2Context : DbContext
 
             entity.Property(e => e.UserId).ValueGeneratedNever();
 
-            entity.Property(e => e.PhotoPrice).HasColumnType("decimal(18,2)");
-
             entity.HasOne(d => d.User).WithOne(p => p.PhotographerProfile).HasConstraintName("FK__Photograp__UserI__4AB81AF0");
         });
 
@@ -241,6 +249,10 @@ public partial class SnapdiDbV2Context : DbContext
             entity.HasKey(e => e.UserId).HasName("PK__User__1788CCAC98BF1C87");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasConstraintName("FK__User__RoleID__3C69FB99");
+
+            // Configure spatial data for CurrentLocation
+            entity.Property(e => e.CurrentLocation)
+                .HasColumnType("geography");
         });
 
         modelBuilder.Entity<Voucher>(entity =>

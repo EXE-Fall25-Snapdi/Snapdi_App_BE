@@ -8,5 +8,6 @@ namespace Snapdi.Repositories.Interfaces
         Task<IEnumerable<PhotographerProfile>> GetAvailablePhotographersAsync();
         Task<IEnumerable<PhotographerProfile>> GetPhotographersByCityAsync(string city);
         Task<bool> ExistsByUserIdAsync(int userId);
+        Task UpdatePhotographerStatusAsync(int userId, bool isAvailable);
     }
 }

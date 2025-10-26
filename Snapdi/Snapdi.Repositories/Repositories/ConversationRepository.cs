@@ -83,6 +83,53 @@ namespace Snapdi.Repositories.Repositories
             return conversation.ConversationId;
         }
 
+        public async Task<int?> GetDirectConversationAsync(int userId1, int userId2)
+        {
+            var conversationId = await (
+                from cp1 in _context.ConversationParticipants
+                where cp1.UserId == userId1
+                join cp2 in _context.ConversationParticipants on cp1.ConversationId equals cp2.ConversationId
+                where cp2.UserId == userId2
+                join c in _context.Conversations on cp1.ConversationId equals c.ConversationId
+                where c.Type == "direct"
+                // Ensure only 2 participants in the conversation
+                where _context.ConversationParticipants.Count(cp => cp.ConversationId == c.ConversationId) == 2
+                select c.ConversationId
+            ).FirstOrDefaultAsync();
+
+            return conversationId == 0 ? null : conversationId;
+        }
+
+        public async Task<int> CreateDirectConversationAsync(int userId1, int userId2)
+        {
+            var conversation = new Conversation
+            {
+                Type = "direct",
+                CreateAt = DateTime.UtcNow
+            };
+
+            _context.Conversations.Add(conversation);
+            await _context.SaveChangesAsync();
+
+            _context.ConversationParticipants.AddRange(
+                new ConversationParticipant
+                {
+                    ConversationId = conversation.ConversationId,
+                    UserId = userId1,
+                    JoinedAt = DateTime.UtcNow
+                },
+                new ConversationParticipant
+                {
+                    ConversationId = conversation.ConversationId,
+                    UserId = userId2,
+                    JoinedAt = DateTime.UtcNow
+                }
+            );
+
+            await _context.SaveChangesAsync();
+            return conversation.ConversationId;
+        }
+
         public async Task UpdateLastReadMessageAsync(int conversationId, int userId, int messageId)
         {
             var participant = await _context.ConversationParticipants

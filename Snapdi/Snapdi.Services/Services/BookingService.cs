@@ -1,10 +1,9 @@
-﻿using Snapdi.Repositories.Interfaces;
+using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Services.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Snapdi.Services.Services
@@ -65,14 +64,18 @@ namespace Snapdi.Services.Services
             if (booking == null)
                 throw new KeyNotFoundException($"Booking ID {bookingId} not found");
 
+            var oldStatusId = booking.StatusId;
+            var oldStatusName = booking.Status?.StatusName;
+
             booking.StatusId = newStatusId;
             await _bookingRepo.UpdateAsync(booking);
             await _bookingRepo.SaveChangesAsync();
 
             // Reload to get updated status name
             var updatedBooking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
-            
-            return MapToBookingResponse(updatedBooking!);
+            var response = MapToBookingResponse(updatedBooking!);
+
+            return response;
         }
 
         public async Task<BookingResponse> GetBookingByIdAsync(int bookingId)
@@ -83,7 +86,223 @@ namespace Snapdi.Services.Services
             return MapToBookingResponse(booking);
         }
 
+        public async Task<IEnumerable<BookingDto>> GetAllBookingsAsync()
+        {
+            var bookings = await _bookingRepo.GetAllAsync();
+            return bookings.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<BookingDto>> GetBookingsByCustomerAsync(int customerId)
+        {
+            var bookings = await _bookingRepo.GetBookingsByCustomerAsync(customerId);
+            return bookings.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<BookingDto>> GetBookingsByPhotographerAsync(int photographerId)
+        {
+            var bookings = await _bookingRepo.GetBookingsByPhotographerAsync(photographerId);
+            return bookings.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<BookingDto>> GetBookingsByStatusAsync(int statusId)
+        {
+            var bookings = await _bookingRepo.GetBookingsByStatusAsync(statusId);
+            return bookings.Select(MapToDto);
+        }
+
+        public async Task<BookingSearchResultDto> SearchBookingsAsync(BookingSearchDto searchDto)
+        {
+            var (bookings, totalCount) = await _bookingRepo.SearchBookingsAsync(
+                searchDto.PageNumber,
+                searchDto.PageSize,
+                searchDto.SearchTerm,
+                searchDto.CustomerId,
+                searchDto.PhotographerId,
+                searchDto.StatusId,
+                searchDto.LocationAddress,
+                searchDto.MinPrice,
+                searchDto.MaxPrice,
+                searchDto.ScheduleFrom,
+                searchDto.ScheduleTo,
+                searchDto.SortBy,
+                searchDto.SortDirection
+            );
+
+            var bookingDtos = bookings.Select(MapToDto).ToList();
+
+            return new BookingSearchResultDto
+            {
+                Data = bookingDtos,
+                TotalRecords = totalCount,
+                PageNumber = searchDto.PageNumber,
+                PageSize = searchDto.PageSize
+            };
+        }
+
+        public async Task<BookingDto> CreateBookingDtoAsync(CreateBookingDto createDto)
+        {
+            // Validate customer exists
+            var customer = await _userRepo.GetByIdAsync(createDto.CustomerId);
+            if (customer == null)
+            {
+                throw new InvalidOperationException($"Customer with ID {createDto.CustomerId} does not exist");
+            }
+
+            // Validate photographer exists
+            var photographer = await _userRepo.GetByIdAsync(createDto.PhotographerId);
+            if (photographer == null)
+            {
+                throw new InvalidOperationException($"Photographer with ID {createDto.PhotographerId} does not exist");
+            }
+
+            var booking = new Booking
+            {
+                CustomerId = createDto.CustomerId,
+                PhotographerId = createDto.PhotographerId,
+                ScheduleAt = createDto.ScheduleAt,
+                LocationAddress = createDto.LocationAddress,
+                Price = createDto.Price,
+                Note = createDto.Note,
+                StatusId = 1 // Default to "Pending" status (assuming StatusID 1 is Pending)
+            };
+
+            var createdBooking = await _bookingRepo.AddAsync(booking);
+            await _bookingRepo.SaveChangesAsync();
+
+            // Reload booking with details
+            var bookingWithDetails = await _bookingRepo.GetBookingWithDetailsAsync(createdBooking.BookingId);
+
+            return MapToDto(bookingWithDetails!);
+        }
+
+        public async Task<BookingDto?> UpdateBookingAsync(int bookingId, UpdateBookingDto updateDto)
+        {
+            var booking = await _bookingRepo.GetByIdAsync(bookingId);
+            if (booking == null)
+                return null;
+
+            if (updateDto.ScheduleAt.HasValue)
+                booking.ScheduleAt = updateDto.ScheduleAt.Value;
+
+            if (updateDto.LocationAddress != null)
+                booking.LocationAddress = updateDto.LocationAddress;
+
+            if (updateDto.Price.HasValue)
+                booking.Price = updateDto.Price.Value;
+
+            if (updateDto.Note != null)
+                booking.Note = updateDto.Note;
+
+            await _bookingRepo.UpdateAsync(booking);
+            await _bookingRepo.SaveChangesAsync();
+
+            // Reload booking with details
+            var bookingWithDetails = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
+
+            return MapToDto(bookingWithDetails!);
+        }
+
+        public async Task<BookingDto?> UpdateBookingStatusDtoAsync(int bookingId, UpdateBookingStatusDto statusDto)
+        {
+            var booking = await _bookingRepo.GetByIdAsync(bookingId);
+            if (booking == null)
+                return null;
+
+            await _bookingRepo.UpdateBookingStatusAsync(bookingId, statusDto.StatusId);
+            await _bookingRepo.SaveChangesAsync();
+
+            // Reload booking with details
+            var bookingWithDetails = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
+
+            return MapToDto(bookingWithDetails!);
+        }
+
+        public async Task<bool> DeleteBookingAsync(int bookingId)
+        {
+            var booking = await _bookingRepo.GetByIdAsync(bookingId);
+            if (booking == null)
+                return false;
+
+            await _bookingRepo.DeleteAsync(booking);
+            await _bookingRepo.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> BookingExistsAsync(int bookingId)
+        {
+            return await _bookingRepo.BookingExistsAsync(bookingId);
+        }
+
+        public async Task<Dictionary<int, int>> GetBookingsCountByStatusAsync()
+        {
+            return await _bookingRepo.GetBookingsCountByStatusAsync();
+        }
+
+        public async Task<BookingStatisticsResponseDto> GetBookingStatisticsAsync()
+        {
+            var statusCounts = await _bookingRepo.GetBookingsCountByStatusWithNamesAsync();
+            var totalBookings = statusCounts.Sum(x => x.Count);
+
+            var statistics = statusCounts.Select(x => new BookingStatusStatisticsDto
+            {
+                StatusId = x.StatusId,
+                StatusName = x.StatusName,
+                Count = x.Count,
+                Percentage = totalBookings > 0 ? Math.Round((double)x.Count / totalBookings * 100, 2) : 0
+            }).OrderBy(x => x.StatusId).ToList();
+
+            return new BookingStatisticsResponseDto
+            {
+                TotalBookings = totalBookings,
+                StatusStatistics = statistics,
+                GeneratedAt = DateTime.UtcNow
+            };
+        }
+
+        public async Task<PagedResultDto<BookingResponse>> GetMyBookingsAsync(int currentUserId, int page, int pageSize)
+        {
+            // Validate pagination
+            var currentPage = Math.Max(1, page);
+            var currentPageSize = Math.Clamp(pageSize, 1, 100);
+
+            var (bookings, totalCount) = await _bookingRepo.GetBookingsForUserPagedAsync(currentUserId, currentPage, currentPageSize);
+            var items = bookings.Select(MapToBookingResponse).ToList();
+
+            var totalPages = (int)Math.Ceiling((double)totalCount / currentPageSize);
+
+            return new PagedResultDto<BookingResponse>
+            {
+                Items = items,
+                CurrentPage = currentPage,
+                PageSize = currentPageSize,
+                TotalItems = totalCount,
+                TotalPages = totalPages
+            };
+        }
+
         #region Private Methods
+
+        private static BookingDto MapToDto(Booking booking)
+        {
+            return new BookingDto
+            {
+                BookingId = booking.BookingId,
+                CustomerId = booking.CustomerId,
+                CustomerName = booking.Customer?.Name,
+                CustomerEmail = booking.Customer?.Email,
+                CustomerPhone = booking.Customer?.Phone,
+                PhotographerId = booking.PhotographerId,
+                PhotographerName = booking.Photographer?.Name,
+                PhotographerEmail = booking.Photographer?.Email,
+                PhotographerPhone = booking.Photographer?.Phone,
+                ScheduleAt = booking.ScheduleAt,
+                LocationAddress = booking.LocationAddress,
+                StatusId = booking.StatusId,
+                StatusName = booking.Status?.StatusName,
+                Price = booking.Price,
+                Note = booking.Note
+            };
+        }
 
         private static BookingResponse MapToBookingResponse(Booking booking)
         {
@@ -91,12 +310,13 @@ namespace Snapdi.Services.Services
             {
                 BookingId = booking.BookingId,
                 Customer = booking.Customer != null ? MapToBookingUserDto(booking.Customer) : null,
-                Photographer = booking.Photographer != null ? MapToBookingUserDto(booking.Photographer) : null,
+                Photographer = booking.Photographer != null ? MapToBookingPhotographerDto(booking.Photographer) : null,
                 ScheduleAt = booking.ScheduleAt,
                 LocationAddress = booking.LocationAddress,
                 Status = booking.Status != null ? MapToBookingStatusDto(booking.Status) : null,
                 Price = booking.Price,
-                Note = booking.Note
+                Note = booking.Note,
+                PhotoLink = booking.PhotoLink
             };
         }
 
@@ -109,6 +329,23 @@ namespace Snapdi.Services.Services
                 Email = user.Email,
                 Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone
             };
+        }
+
+        private static BookingPhotographerDto MapToBookingPhotographerDto(User user)
+        {
+            var dto = new BookingPhotographerDto
+            {
+                UserId = user.UserId,
+                Name = user.Name,
+                Email = user.Email,
+                Phone = string.IsNullOrEmpty(user.Phone) ? null : user.Phone,
+                AvgRating = user.PhotographerProfile?.AvgRating,
+                IsAvailable = user.PhotographerProfile?.IsAvailable ?? false,
+                LevelPhotographer = user.PhotographerProfile?.LevelPhotographer,
+                PhotoPrice = null, // PhotoPrice is not available in PhotographerProfile model
+                AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl) ? null : user.AvatarUrl
+            };
+            return dto;
         }
 
         private static BookingStatusDto MapToBookingStatusDto(BookingStatus status)
