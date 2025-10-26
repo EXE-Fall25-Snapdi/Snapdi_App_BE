@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace Snapdi.Repositories.Models;
 
@@ -32,9 +29,6 @@ public partial class Payment
 
     [StringLength(255)]
     public string? TransactionReference { get; set; }
-
-    [StringLength(1000)]
-    public string? PaymentImageUrl { get; set; }
 
     [Column("PaymentStatusID")]
     public int? PaymentStatusId { get; set; }
