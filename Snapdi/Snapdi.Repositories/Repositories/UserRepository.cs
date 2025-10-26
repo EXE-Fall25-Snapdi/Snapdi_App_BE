@@ -125,6 +125,15 @@ namespace Snapdi.Repositories.Repositories
             }
         }
 
+        public async Task UpdateAvatarAsync(int userId, string avatarUrl)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.AvatarUrl = avatarUrl;
+            }
+        }
+
         public async Task UpdateUserStatusAsync(int userId, bool isActive, bool isVerify)
         {
             var user = await _context.Users.FindAsync(userId);
