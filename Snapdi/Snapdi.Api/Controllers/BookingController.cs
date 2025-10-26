@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Snapdi.Services.DTOs.RequestModels;
+using Snapdi.Services.DTOs;
 using Snapdi.Services.Interfaces;
 
 namespace Snapdi.Api.Controllers
@@ -27,7 +27,7 @@ namespace Snapdi.Api.Controllers
         public async Task<IActionResult> GetBookingById(int id)
         {
             var result = await _bookingService.GetBookingByIdAsync(id);
-            return Ok();
+            return Ok(result);
         }
 
         [HttpPut("{id}/status")]

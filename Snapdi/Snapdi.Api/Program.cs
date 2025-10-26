@@ -74,10 +74,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-//  AutoMapper v15
-builder.Services.AddAutoMapper(cfg => { }, typeof(Program).Assembly);
-
-
 // Add Authentication services
 builder.Services.AddAuthentication(options =>
 {
@@ -162,6 +158,7 @@ builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
 builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped<IVoucherUsageRepository, VoucherUsageRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IBookingStatusRepository, BookingStatusRepository>();
 builder.Services.AddScoped<IStyleRepository, StyleRepository>();
 builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleRepository>();
 builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();
@@ -175,7 +172,7 @@ builder.Services.AddScoped<IPhotoPortfolioService, PhotoPortfolioService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IVoucherUsageService, VoucherUsageService>();
-//builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IStyleService, StyleService>();

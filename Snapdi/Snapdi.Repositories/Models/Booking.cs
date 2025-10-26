@@ -22,9 +22,6 @@ public partial class Booking
     [Column(TypeName = "datetime")]
     public DateTime ScheduleAt { get; set; }
 
-    [StringLength(100)]
-    public string? LocationCity { get; set; }
-
     [StringLength(255)]
     public string? LocationAddress { get; set; }
 
