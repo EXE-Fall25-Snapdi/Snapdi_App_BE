@@ -544,6 +544,16 @@ namespace Snapdi.Services.Services
             }
         }
 
+        public async Task<bool> UpdateAvatarAsync(int userId, string avatarUrl)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                return false;
+            await _userRepository.UpdateAvatarAsync(userId, avatarUrl);
+            await _userRepository.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<bool> UpdatePhotographerStatusAsync(int userId, bool isAvailable, LocationCoordinatesDto? currentLocation = null)
         {
             try

@@ -19,6 +19,7 @@ namespace Snapdi.Repositories.Interfaces
         Task<bool> IsPhoneExistsAsync(string phone);
         Task UpdateRefreshTokenAsync(int userId, string refreshToken, DateTime expiredAt);
         Task UpdatePasswordAsync(int userId, string newPassword);
+        Task UpdateAvatarAsync(int userId, string avatarUrl);
         Task UpdateUserStatusAsync(int userId, bool isActive, bool isVerify);
         Task UpdateEmailVerificationTokenAsync(int userId, string verificationToken, DateTime expiredAt);
         Task VerifyEmailAsync(int userId);
