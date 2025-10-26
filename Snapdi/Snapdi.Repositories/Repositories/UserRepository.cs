@@ -490,18 +490,20 @@ namespace Snapdi.Repositories.Repositories
                 query = query.Where(u => u.PhotographerProfile!.AvgRating <= maxRating.Value);
             }
 
-            // Apply price range filters
+            // Apply price range filters - check if photographer has any photo type within the price range
             if (minPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value >= minPrice.Value);
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => 
+     ppt.PhotoPrice.HasValue && 
+  ppt.PhotoPrice.Value >= minPrice.Value));
             }
 
             if (maxPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value <= maxPrice.Value);
-            }
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => 
+         ppt.PhotoPrice.HasValue && 
+      ppt.PhotoPrice.Value <= maxPrice.Value));
+      }
 
             // Apply years of experience filter
             if (!string.IsNullOrEmpty(yearsOfExperience))
@@ -554,12 +556,14 @@ namespace Snapdi.Repositories.Repositories
                     "name" => isDescending ? query.OrderByDescending(u => u.Name) : query.OrderBy(u => u.Name),
                     "email" => isDescending ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
                     "rating" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.AvgRating ?? 0) : query.OrderBy(u => u.PhotographerProfile!.AvgRating ?? 0),
-                    "price" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.PhotoPrice ?? 0) : query.OrderBy(u => u.PhotographerProfile!.PhotoPrice ?? 0),
-                    "createdat" => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
-                    "yearsofexperience" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.YearsOfExperience ?? "") : query.OrderBy(u => u.PhotographerProfile!.YearsOfExperience ?? ""),
-                    "worklocation" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.WorkLocation ?? "") : query.OrderBy(u => u.PhotographerProfile!.WorkLocation ?? ""),
-                    _ => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt)
-                };
+                    "price" => isDescending ? 
+     query.OrderByDescending(u => u.PhotographerProfile!.PhotographerPhotoTypes.Min(ppt => ppt.PhotoPrice) ?? 0) : 
+  query.OrderBy(u => u.PhotographerProfile!.PhotographerPhotoTypes.Min(ppt => ppt.PhotoPrice) ?? 0),
+      "createdat" => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
+        "yearsofexperience" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.YearsOfExperience ?? "") : query.OrderBy(u => u.PhotographerProfile!.YearsOfExperience ?? ""),
+           "worklocation" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.WorkLocation ?? "") : query.OrderBy(u => u.PhotographerProfile!.WorkLocation ?? ""),
+      _ => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt)
+     };
             }
             else
             {
@@ -641,18 +645,20 @@ namespace Snapdi.Repositories.Repositories
                 }
             }
 
-            // Apply price range filters
+            // Apply price range filters - check if photographer has any photo type within the price range
             if (minPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value >= minPrice.Value);
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => 
+     ppt.PhotoPrice.HasValue && 
+  ppt.PhotoPrice.Value >= minPrice.Value));
             }
 
             if (maxPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value <= maxPrice.Value);
-            }
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt => 
+         ppt.PhotoPrice.HasValue && 
+      ppt.PhotoPrice.Value <= maxPrice.Value));
+      }
 
             // Get all photographers matching filters
             var allPhotographers = await query.ToListAsync();

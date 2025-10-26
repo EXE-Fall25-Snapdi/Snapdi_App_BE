@@ -95,6 +95,18 @@ namespace Snapdi.Services.Services
             return await _conversationRepository.CreateSupportConversationAsync(userId, adminUser.UserId);
         }
 
+        public async Task<int> GetOrCreateUserConversationAsync(int userId1, int userId2)
+        {
+            if (userId1 == userId2)
+                throw new ArgumentException("Cannot create conversation with yourself");
+
+            var existingConversationId = await _conversationRepository.GetDirectConversationAsync(userId1, userId2);
+            if (existingConversationId.HasValue)
+                return existingConversationId.Value;
+
+            return await _conversationRepository.CreateDirectConversationAsync(userId1, userId2);
+        }
+
         public async Task<bool> IsUserParticipantAsync(int conversationId, int userId)
         {
             return await _conversationRepository.IsUserParticipantAsync(conversationId, userId);

@@ -106,11 +106,6 @@ namespace Snapdi.Services.DTOs
         public double? AvgRating { get; set; }
 
         /// <summary>
-        /// Photo service price
-        /// </summary>
-        public double? PhotoPrice { get; set; }
-
-        /// <summary>
         /// Availability status
         /// </summary>
         public bool IsAvailable { get; set; }
@@ -126,14 +121,24 @@ namespace Snapdi.Services.DTOs
         public string? LocationCity { get; set; }
 
         /// <summary>
-        /// Photo types offered
+        /// Photo types offered with pricing information
         /// </summary>
-        public List<string>? PhotoTypes { get; set; }
+        public List<PhotoTypeWithPriceDto>? PhotoTypes { get; set; }
 
         /// <summary>
         /// Photography styles
         /// </summary>
         public List<string>? Styles { get; set; }
+    }
+
+    /// <summary>
+    /// Simplified photo type DTO for map display
+    /// </summary>
+    public class PhotoTypeWithPriceDto
+    {
+        public string PhotoTypeName { get; set; } = null!;
+        public double? PhotoPrice { get; set; }
+        public int? Time { get; set; }
     }
 
     /// <summary>
