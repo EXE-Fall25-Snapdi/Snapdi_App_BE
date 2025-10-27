@@ -193,7 +193,7 @@ namespace Snapdi.Api.Controllers
             var response = new PhotographerRegistrationResponseDto
             {
                 User = photographerUser,
-                Message = "Photographer registration successful. Please check your email for a 6-digit verification code to verify your account before you can start accepting bookings."
+                Message = "Photographer registration successful. Please check your email for a 6-digit verification code to verify your account."
             };
 
             return CreatedAtAction("GetUserWithPhotographer", "Users", new { id = photographerUser.UserId }, response);

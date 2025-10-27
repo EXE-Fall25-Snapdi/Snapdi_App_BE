@@ -170,15 +170,14 @@ namespace Snapdi.Services.DTOs
         public string? YearsOfExperience { get; set; }
         public string? EquipmentDescription { get; set; }
         public string? Description { get; set; }
-        public double? PhotoPrice { get; set; }
         public string? WorkLocation { get; set; }
 
         // Location Information
         public LocationCoordinatesDto? CurrentLocation { get; set; }
         public double? DistanceInKm { get; set; } // Distance from search point (only populated in nearby search)
 
-        // Photo Types Information
-        public List<PhotoTypeDto>? PhotoTypes { get; set; }
+        // Photo Types Information with pricing
+        public List<PhotoTypeWithPricingResponseDto>? PhotoTypes { get; set; }
 
         // Style Information
         public List<StyleDto>? Styles { get; set; }
@@ -186,23 +185,5 @@ namespace Snapdi.Services.DTOs
         // Additional Info
         public int PortfolioCount { get; set; }
         public List<string>? PortfolioUrls { get; set; }
-    }
-
-    /// <summary>
-    /// DTO for photography style information
-    /// </summary>
-    public class StyleDto
-    {
-        public int StyleId { get; set; }
-        public string StyleName { get; set; } = null!;
-    }
-
-    /// <summary>
-    /// DTO for photo type information
-    /// </summary>
-    public class PhotoTypeDto
-    {
-        public int PhotoTypeId { get; set; }
-        public string PhotoTypeName { get; set; } = null!;
     }
 }

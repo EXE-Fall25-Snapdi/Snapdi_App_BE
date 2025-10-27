@@ -56,14 +56,16 @@ namespace Snapdi.Services.DTOs
 
         public bool IsAvailable { get; set; } = false;
 
-        // New fields for photographer
-        [Range(0, double.MaxValue, ErrorMessage = "Photo price must be a positive number")]
-        public double? PhotoPrice { get; set; }
-
-        public List<int>? PhotoTypeIds { get; set; }
-
         [MaxLength(255, ErrorMessage = "Work location cannot exceed 255 characters")]
         public string? WorkLocation { get; set; }
+
+        // Photo type associations with pricing
+        [Required(ErrorMessage = "At least one photo type with pricing must be provided")]
+        [MinLength(1, ErrorMessage = "At least one photo type with pricing must be provided")]
+        public List<PhotoTypeWithPricingDto> PhotographerPhotoTypes { get; set; } = new();
+
+        // Style associations
+        public List<int>? PhotographerStyleIds { get; set; } = new();
     }
 
     /// <summary>

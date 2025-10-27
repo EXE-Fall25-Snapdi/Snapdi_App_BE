@@ -383,6 +383,52 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Update user avatar (User can update own avatar, Admin can update any)
+        /// </summary>
+        [HttpPut("{id}/avatar")]
+        [Authorize] // Authenticated users only
+        public async Task<ActionResult> UpdateAvatar(int id, [FromBody][Required] string avatarUrl)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest(new { error = "Invalid user ID", message = "User ID must be a positive number" });
+                }
+                if (string.IsNullOrEmpty(avatarUrl))
+                {
+                    return BadRequest(new { error = "Invalid avatar URL", message = "Avatar URL cannot be empty" });
+                }
+                // Check if user can update this avatar
+                var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                
+                if (currentUserIdClaim != null && int.TryParse(currentUserIdClaim.Value, out int currentUserId))
+                {
+                    // User can update their own avatar OR admin can update any avatar
+                    if (currentUserId != id && currentUserRole != "ADMIN")
+                    {
+                        return Forbid("You can only update your own avatar unless you are an admin");
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { error = "Invalid token", message = "Could not determine current user" });
+                }
+                var result = await _userService.UpdateAvatarAsync(id, avatarUrl);
+                if (!result)
+                {
+                    return NotFound(new { error = "User not found", message = $"User with ID {id} does not exist" });
+                }
+                return Ok(new { message = "Avatar updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while updating the avatar", details = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Get users by role (Admin only)
         /// </summary>
         [HttpGet("role/{roleId}")]

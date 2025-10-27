@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Snapdi.Repositories.Context;
@@ -12,9 +13,11 @@ using Snapdi.Repositories.Context;
 namespace Snapdi.Repositories.Migrations
 {
     [DbContext(typeof(SnapdiDbV2Context))]
-    partial class SnapdiDbV2ContextModelSnapshot : ModelSnapshot
+    [Migration("20251025142318_AddPhotoTypeFieldsAndBookingPhotoLink")]
+    partial class AddPhotoTypeFieldsAndBookingPhotoLink
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -422,10 +425,16 @@ namespace Snapdi.Repositories.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PhotoTypeId"));
 
+                    b.Property<double?>("PhotoPrice")
+                        .HasColumnType("float");
+
                     b.Property<string>("PhotoTypeName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("Time")
+                        .HasColumnType("int");
 
                     b.HasKey("PhotoTypeId")
                         .HasName("PK__PhotoTyp__8AD147A0C035264E");
@@ -442,12 +451,6 @@ namespace Snapdi.Repositories.Migrations
                     b.Property<int>("PhotoTypeId")
                         .HasColumnType("int")
                         .HasColumnName("PhotoTypeID");
-
-                    b.Property<double?>("PhotoPrice")
-                        .HasColumnType("float");
-
-                    b.Property<int?>("Time")
-                        .HasColumnType("int");
 
                     b.HasKey("UserId", "PhotoTypeId")
                         .HasName("PK__Photogra__PhotographerPhotoType");

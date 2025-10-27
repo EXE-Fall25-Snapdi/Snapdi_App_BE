@@ -2,6 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Snapdi.Services.DTOs;
 
+/// <summary>
+/// Style DTO with Id and Name
+/// </summary>
+public class StyleDto
+{
+    public int StyleId { get; set; }
+    public string StyleName { get; set; } = null!;
+}
 
 public class CreateStyleDto
 {

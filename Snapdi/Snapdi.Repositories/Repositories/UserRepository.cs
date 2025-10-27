@@ -125,6 +125,15 @@ namespace Snapdi.Repositories.Repositories
             }
         }
 
+        public async Task UpdateAvatarAsync(int userId, string avatarUrl)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.AvatarUrl = avatarUrl;
+            }
+        }
+
         public async Task UpdateUserStatusAsync(int userId, bool isActive, bool isVerify)
         {
             var user = await _context.Users.FindAsync(userId);
@@ -158,8 +167,8 @@ namespace Snapdi.Repositories.Repositories
         }
 
         public async Task<(IEnumerable<User> Users, int TotalCount)> GetUsersWithFilterAsync(
-            int page, 
-            int pageSize, 
+            int page,
+            int pageSize,
             string? searchTerm = null,
             int? roleId = null,
             bool? isActive = null,
@@ -176,8 +185,8 @@ namespace Snapdi.Repositories.Repositories
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 var searchLower = searchTerm.ToLower();
-                query = query.Where(u => 
-                    u.Name.ToLower().Contains(searchLower) || 
+                query = query.Where(u =>
+                    u.Name.ToLower().Contains(searchLower) ||
                     u.Email.ToLower().Contains(searchLower));
             }
 
@@ -215,7 +224,7 @@ namespace Snapdi.Repositories.Repositories
             if (!string.IsNullOrEmpty(sortBy))
             {
                 var isDescending = sortDirection?.ToLower() == "desc";
-                
+
                 query = sortBy.ToLower() switch
                 {
                     "name" => isDescending ? query.OrderByDescending(u => u.Name) : query.OrderBy(u => u.Name),
@@ -244,21 +253,21 @@ namespace Snapdi.Repositories.Repositories
         public async Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync()
         {
             const int PHOTOGRAPHER_ROLE_ID = 3;
-            
+
             return await _context.Users
                 .Include(u => u.Role)
                 .Include(u => u.PhotographerProfile)
                     .ThenInclude(pp => pp.PhotographerStyles)
                         .ThenInclude(ps => ps.Style)
-                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
-                           u.IsVerify == true && 
-                           u.PhotographerProfile != null && 
-                           u.PhotographerProfile.IsAvailable == false && 
+                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID &&
+                           u.IsVerify == true &&
+                           u.PhotographerProfile != null &&
+                           u.PhotographerProfile.IsAvailable == false &&
                            (u.PhotographerProfile.LevelPhotographer == null || u.PhotographerProfile.LevelPhotographer == ""))
                 .ToListAsync();
         }
 
-        public async Task<(IEnumerable<User> WithPortfolio, IEnumerable<User> WithoutPortfolio, int WithPortfolioTotalCount, int WithoutPortfolioTotalCount)> 
+        public async Task<(IEnumerable<User> WithPortfolio, IEnumerable<User> WithoutPortfolio, int WithPortfolioTotalCount, int WithoutPortfolioTotalCount)>
             GetPhotographersPendingLevelAssignmentPagedAsync(
                 int page,
                 int pageSize,
@@ -271,7 +280,7 @@ namespace Snapdi.Repositories.Repositories
                 DateTime? createdTo = null)
         {
             const int PHOTOGRAPHER_ROLE_ID = 3;
-            
+
             // Base query for photographers pending level assignment
             var baseQuery = _context.Users
                 .Include(u => u.Role)
@@ -279,18 +288,18 @@ namespace Snapdi.Repositories.Repositories
                     .ThenInclude(pp => pp.PhotographerStyles)
                         .ThenInclude(ps => ps.Style)
                 .Include(u => u.PhotoPortfolios)
-                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
-                           u.IsVerify == true && 
-                           u.PhotographerProfile != null && 
-                           u.PhotographerProfile.IsAvailable == false && 
+                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID &&
+                           u.IsVerify == true &&
+                           u.PhotographerProfile != null &&
+                           u.PhotographerProfile.IsAvailable == false &&
                            (u.PhotographerProfile.LevelPhotographer == null || u.PhotographerProfile.LevelPhotographer == ""));
 
             // Apply common filters
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 var searchLower = searchTerm.ToLower();
-                baseQuery = baseQuery.Where(u => 
-                    u.Name.ToLower().Contains(searchLower) || 
+                baseQuery = baseQuery.Where(u =>
+                    u.Name.ToLower().Contains(searchLower) ||
                     u.Email.ToLower().Contains(searchLower));
             }
 
@@ -332,7 +341,7 @@ namespace Snapdi.Repositories.Repositories
 
             // Apply sorting to both queries
             var isDescending = sortDirection?.ToLower() == "desc";
-            
+
             if (!string.IsNullOrEmpty(sortBy))
             {
                 withPortfolioQuery = sortBy.ToLower() switch
@@ -408,7 +417,7 @@ namespace Snapdi.Repositories.Repositories
             string? sortDirection = "desc")
         {
             const int PHOTOGRAPHER_ROLE_ID = 3;
-            
+
             var query = _context.Users
                 .Include(u => u.Role)
                 .Include(u => u.PhotographerProfile)
@@ -425,8 +434,8 @@ namespace Snapdi.Repositories.Repositories
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 var searchLower = searchTerm.ToLower();
-                query = query.Where(u => 
-                    u.Name.ToLower().Contains(searchLower) || 
+                query = query.Where(u =>
+                    u.Name.ToLower().Contains(searchLower) ||
                     u.Email.ToLower().Contains(searchLower) ||
                     (u.PhotographerProfile!.Description != null && u.PhotographerProfile.Description.ToLower().Contains(searchLower)));
             }
@@ -440,7 +449,7 @@ namespace Snapdi.Repositories.Repositories
             // Apply work location filter (searches in PhotographerProfile.WorkLocation)
             if (!string.IsNullOrEmpty(workLocation))
             {
-                query = query.Where(u => u.PhotographerProfile!.WorkLocation != null && 
+                query = query.Where(u => u.PhotographerProfile!.WorkLocation != null &&
                                         workLocation.ToLower().Contains(u.PhotographerProfile!.WorkLocation.ToLower()));
             }
 
@@ -457,7 +466,7 @@ namespace Snapdi.Repositories.Repositories
             // Apply photographer level filter
             if (!string.IsNullOrEmpty(levelPhotographer))
             {
-                query = query.Where(u => u.PhotographerProfile!.LevelPhotographer != null && 
+                query = query.Where(u => u.PhotographerProfile!.LevelPhotographer != null &&
                                         u.PhotographerProfile.LevelPhotographer.ToLower() == levelPhotographer.ToLower());
             }
 
@@ -490,23 +499,29 @@ namespace Snapdi.Repositories.Repositories
                 query = query.Where(u => u.PhotographerProfile!.AvgRating <= maxRating.Value);
             }
 
-            // Apply price range filters
+            // Apply price range filters - check if photographer has any photo type within the price range
             if (minPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value >= minPrice.Value);
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt =>
+                    ppt.PhotoPrice.HasValue &&
+                    ppt.PhotoPrice.Value >= minPrice.Value &&
+                    ppt.PhotoTypeId == photoTypeIds!.First()
+                ));
             }
 
             if (maxPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value <= maxPrice.Value);
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt =>
+                    ppt.PhotoPrice.HasValue &&
+                    ppt.PhotoPrice.Value <= maxPrice.Value &&
+                    ppt.PhotoTypeId == photoTypeIds!.First()
+                ));
             }
 
             // Apply years of experience filter
             if (!string.IsNullOrEmpty(yearsOfExperience))
             {
-                query = query.Where(u => u.PhotographerProfile!.YearsOfExperience != null && 
+                query = query.Where(u => u.PhotographerProfile!.YearsOfExperience != null &&
                                         u.PhotographerProfile.YearsOfExperience.ToLower().Contains(yearsOfExperience.ToLower()));
             }
 
@@ -546,7 +561,7 @@ namespace Snapdi.Repositories.Repositories
 
             // Apply sorting
             var isDescending = sortDirection?.ToLower() == "desc";
-            
+
             if (!string.IsNullOrEmpty(sortBy))
             {
                 query = sortBy.ToLower() switch
@@ -554,7 +569,9 @@ namespace Snapdi.Repositories.Repositories
                     "name" => isDescending ? query.OrderByDescending(u => u.Name) : query.OrderBy(u => u.Name),
                     "email" => isDescending ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
                     "rating" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.AvgRating ?? 0) : query.OrderBy(u => u.PhotographerProfile!.AvgRating ?? 0),
-                    "price" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.PhotoPrice ?? 0) : query.OrderBy(u => u.PhotographerProfile!.PhotoPrice ?? 0),
+                    "price" => isDescending ?
+     query.OrderByDescending(u => u.PhotographerProfile!.PhotographerPhotoTypes.Min(ppt => ppt.PhotoPrice) ?? 0) :
+  query.OrderBy(u => u.PhotographerProfile!.PhotographerPhotoTypes.Min(ppt => ppt.PhotoPrice) ?? 0),
                     "createdat" => isDescending ? query.OrderByDescending(u => u.CreatedAt) : query.OrderBy(u => u.CreatedAt),
                     "yearsofexperience" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.YearsOfExperience ?? "") : query.OrderBy(u => u.PhotographerProfile!.YearsOfExperience ?? ""),
                     "worklocation" => isDescending ? query.OrderByDescending(u => u.PhotographerProfile!.WorkLocation ?? "") : query.OrderBy(u => u.PhotographerProfile!.WorkLocation ?? ""),
@@ -590,11 +607,11 @@ namespace Snapdi.Repositories.Repositories
             double? maxPrice = null)
         {
             const int PHOTOGRAPHER_ROLE_ID = 3;
-            
+
             // Create search point with SRID 4326 (WGS84 - standard for GPS coordinates)
             var geometryFactory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
             var searchPoint = geometryFactory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(longitude, latitude));
-            
+
             // Convert radius from kilometers to meters (STDistance returns meters)
             var radiusInMeters = radiusInKm * 1000;
 
@@ -608,7 +625,7 @@ namespace Snapdi.Repositories.Repositories
                     .ThenInclude(pp => pp.PhotographerPhotoTypes)
                         .ThenInclude(ppt => ppt.PhotoType)
                 .Include(u => u.PhotoPortfolios)
-                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID && 
+                .Where(u => u.RoleId == PHOTOGRAPHER_ROLE_ID &&
                            u.PhotographerProfile != null &&
                            u.CurrentLocation != null && // Must have location
                            u.IsActive == true && // Only active photographers
@@ -641,17 +658,19 @@ namespace Snapdi.Repositories.Repositories
                 }
             }
 
-            // Apply price range filters
+            // Apply price range filters - check if photographer has any photo type within the price range
             if (minPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value >= minPrice.Value);
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt =>
+     ppt.PhotoPrice.HasValue &&
+  ppt.PhotoPrice.Value >= minPrice.Value));
             }
 
             if (maxPrice.HasValue)
             {
-                query = query.Where(u => u.PhotographerProfile!.PhotoPrice.HasValue && 
-                                        u.PhotographerProfile.PhotoPrice.Value <= maxPrice.Value);
+                query = query.Where(u => u.PhotographerProfile!.PhotographerPhotoTypes.Any(ppt =>
+         ppt.PhotoPrice.HasValue &&
+      ppt.PhotoPrice.Value <= maxPrice.Value));
             }
 
             // Get all photographers matching filters
