@@ -17,6 +17,7 @@ namespace Snapdi.Services.Interfaces
         Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto);
         Task<bool> DeleteUserAsync(int userId);
         Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto);
+        Task<bool> UpdateAvatarAsync(int userId, string avatarUrl);
         Task<bool> UpdateRefreshTokenAsync(int userId, string refreshToken, DateTime expiredAt);
         Task<bool> UpdateUserStatusAsync(int userId, bool isActive, bool isVerify);
         Task<bool> IsEmailExistsAsync(string email);
