@@ -162,6 +162,7 @@ builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleReposi
 builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();
 builder.Services.AddScoped<IPhotographerPhotoTypeRepository, PhotographerPhotoTypeRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -180,6 +181,7 @@ builder.Services.AddScoped<IPhotographerStyleService, PhotographerStyleService>(
 builder.Services.AddScoped<IPhotoTypeService, PhotoTypeService>();
 builder.Services.AddScoped<IPhotographerPhotoTypeService, PhotographerPhotoTypeService>();
 builder.Services.AddScoped<IPaymentsService, PaymentService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();

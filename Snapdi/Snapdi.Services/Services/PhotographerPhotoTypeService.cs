@@ -91,8 +91,14 @@ namespace Snapdi.Services.Services
                     throw new InvalidOperationException($"Photo type with ID {photoTypeDto.PhotoTypeId} does not exist.");
                 }
 
-                // Skip if association already exists
+                // Skip if association already exists in database
                 if (await _photographerPhotoTypeRepository.ExistsByUserIdAndPhotoTypeIdAsync(userId, photoTypeDto.PhotoTypeId))
+                {
+                    continue;
+                }
+
+                // Skip if already added to the list (avoid duplicates in request)
+                if (photographerPhotoTypes.Any(ppt => ppt.PhotoTypeId == photoTypeDto.PhotoTypeId))
                 {
                     continue;
                 }
