@@ -157,9 +157,9 @@ namespace Snapdi.Api.Controllers
                 if (string.IsNullOrEmpty(userIdClaim))
                     return Unauthorized(new { success = false, message = "User not authenticated" });
 
-                // Find or create PaymentStatus 'Confirmed'
+                // Find or create PaymentStatus 'Pending'
                 var confirmedStatus = await _db.PaymentStatuses
-                    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "confirmed");
+                    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "pending");
 
                 if (confirmedStatus == null)
                 {
@@ -213,7 +213,7 @@ namespace Snapdi.Api.Controllers
                     success = true,
                     paymentId = payment.PaymentId,
                     status = "done",
-                    message = "Payment confirmed successfully"
+                    message = "Payment created successfully"
                 });
             }
             catch (Exception ex)

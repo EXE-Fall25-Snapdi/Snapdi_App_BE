@@ -72,6 +72,16 @@ namespace Snapdi.Services.DTOs
         public string? StatusName { get; set; }
         public double Price { get; set; }
         public string? Note { get; set; }
+
+        /// <summary>
+        /// Photo type ID for the booking
+        /// </summary>
+        public int? PhotoTypeId { get; set; }
+
+        /// <summary>
+        /// Duration/time for the booking in minutes
+        /// </summary>
+        public int? Time { get; set; }
     }
 
     /// <summary>
@@ -97,6 +107,20 @@ namespace Snapdi.Services.DTOs
         
         [MaxLength(1000)]
         public string? Note { get; set; }
+
+        /// <summary>
+        /// Photo type ID for the booking
+        /// </summary>
+        [Required(ErrorMessage = "Photo type ID is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Photo type ID must be a positive number")]
+        public int PhotoTypeId { get; set; }
+
+        /// <summary>
+        /// Duration/time for the booking in minutes
+        /// </summary>
+        [Required(ErrorMessage = "Duration time is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Duration time must be a positive number")]
+        public int Time { get; set; }
     }
 
     /// <summary>
@@ -122,6 +146,20 @@ namespace Snapdi.Services.DTOs
 
         [StringLength(1000, ErrorMessage = "Note cannot exceed 1000 characters")]
         public string? Note { get; set; }
+
+        /// <summary>
+        /// Photo type ID for the booking
+        /// </summary>
+        [Required(ErrorMessage = "Photo type ID is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Photo type ID must be a positive number")]
+        public int PhotoTypeId { get; set; }
+
+        /// <summary>
+        /// Duration/time for the booking in minutes
+        /// </summary>
+        [Required(ErrorMessage = "Duration time is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Duration time must be a positive number")]
+        public int Time { get; set; }
     }
 
     /// <summary>

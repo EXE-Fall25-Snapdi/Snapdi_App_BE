@@ -69,5 +69,14 @@ namespace Snapdi.Repositories.Interfaces
         /// </summary>
         Task<(IEnumerable<Payment> Payments, int TotalCount)> GetPaymentsByPhotographerIdAsync(
             int photographerId, int page, int pageSize);
+            
+        /// <summary>
+        /// Get all payments within a specific date range
+        /// </summary>
+        /// <param name="startDate">Start date of the range</param>
+        /// <param name="endDate">End date of the range</param>
+        /// <returns>List of payments within the date range</returns>
+        Task<IEnumerable<Payment>> GetPaymentsByDateRangeAsync(DateTime startDate, DateTime endDate);
     }
 }
+
