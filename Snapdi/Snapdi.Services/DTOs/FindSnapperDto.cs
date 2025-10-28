@@ -177,7 +177,7 @@ namespace Snapdi.Services.DTOs
         public double? DistanceInKm { get; set; } // Distance from search point (only populated in nearby search)
 
         // Photo Types Information with pricing
-        public List<PhotoTypeWithPricingDto>? PhotoTypes { get; set; }
+        public List<PhotoTypeWithPricingResponseDto>? PhotoTypes { get; set; }
 
         // Style Information
         public List<StyleDto>? Styles { get; set; }

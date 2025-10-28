@@ -963,9 +963,10 @@ namespace Snapdi.Services.Services
                 {
                     snapperDto.PhotoTypes = user.PhotographerProfile.PhotographerPhotoTypes
                .Where(ppt => ppt.PhotoType != null)
-                 .Select(ppt => new PhotoTypeWithPricingDto
+                 .Select(ppt => new PhotoTypeWithPricingResponseDto
                  {
                      PhotoTypeId = ppt.PhotoTypeId,
+                     PhotoTypeName = ppt.PhotoType?.PhotoTypeName,
                      PhotoPrice = ppt.PhotoPrice,
                      Time = ppt.Time
                  })
