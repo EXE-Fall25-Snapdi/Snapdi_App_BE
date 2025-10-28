@@ -18,6 +18,10 @@ namespace Snapdi.Repositories.Repositories
                     .ThenInclude(c => c!.Role)
                 .Include(b => b.Photographer)
                     .ThenInclude(p => p!.Role)
+                .Include(b => b.Photographer)
+                    .ThenInclude(p => p!.PhotographerProfile)
+                        .ThenInclude(pp => pp!.PhotographerPhotoTypes)
+                            .ThenInclude(ppt => ppt.PhotoType)
                 .Include(b => b.Status)
                 .FirstOrDefaultAsync(b => b.BookingId == bookingId);
         }
@@ -39,6 +43,8 @@ namespace Snapdi.Repositories.Repositories
             return await _context.Bookings
                 .Include(b => b.Customer)
                 .Include(b => b.Photographer)
+                    .ThenInclude(p => p!.PhotographerProfile)
+                        .ThenInclude(pp => pp!.PhotographerPhotoTypes)
                 .Include(b => b.Status)
                 .Where(b => b.PhotographerId == photographerId)
                 .OrderByDescending(b => b.ScheduleAt)

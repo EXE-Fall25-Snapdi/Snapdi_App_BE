@@ -163,6 +163,8 @@ namespace Snapdi.Services.Services
                 LocationAddress = createDto.LocationAddress,
                 Price = createDto.Price,
                 Note = createDto.Note,
+                PhotoTypeId = createDto.PhotoTypeId,
+                Time = createDto.Time,
                 StatusId = 1 // Default to "Pending" status (assuming StatusID 1 is Pending)
             };
 
@@ -280,6 +282,69 @@ namespace Snapdi.Services.Services
             };
         }
 
+        /// <summary>
+        /// Get pending bookings for a photographer
+        /// </summary>
+        public async Task<PhotographerPendingBookingsResponseDto> GetPhotographerPendingBookingsAsync(int photographerId, int page = 1, int pageSize = 10)
+        {
+            // Validate pagination
+            var currentPage = Math.Max(1, page);
+            var currentPageSize = Math.Clamp(pageSize, 1, 100);
+
+            // Get pending status ID (assuming 1 is pending or get it dynamically)
+            var pendingStatus = await _statusRepo.GetByNameAsync("Pending");
+            if (pendingStatus == null)
+            {
+                return new PhotographerPendingBookingsResponseDto
+                {
+                    Data = new List<PendingBookingResponseDto>(),
+                    TotalCount = 0,
+                    CurrentPage = currentPage,
+                    PageSize = currentPageSize,
+                    TotalPages = 0
+                };
+            }
+
+            // Get photographer's pending bookings
+            var bookings = await _bookingRepo.GetBookingsByPhotographerAsync(photographerId);
+            var pendingBookings = bookings
+                .Where(b => b.StatusId == pendingStatus.StatusId)
+                .OrderByDescending(b => b.ScheduleAt)
+                .ToList();
+
+            // Apply pagination
+            var totalCount = pendingBookings.Count;
+            var totalPages = (int)Math.Ceiling((double)totalCount / currentPageSize);
+            
+            var paginatedBookings = pendingBookings
+                .Skip((currentPage - 1) * currentPageSize)
+                .Take(currentPageSize)
+                .ToList();
+
+            // Enrich bookings with additional data (customer photo types for this booking)
+            var pendingBookingResponses = new List<PendingBookingResponseDto>();
+  
+            foreach (var booking in paginatedBookings)
+            {
+                // Reload booking with full details
+                var bookingWithDetails = await _bookingRepo.GetBookingWithDetailsAsync(booking.BookingId);
+                if (bookingWithDetails != null)
+                {
+                    var pendingResponse = MapToPendingBookingResponseDto(bookingWithDetails);
+                    pendingBookingResponses.Add(pendingResponse);
+                }
+            }
+
+            return new PhotographerPendingBookingsResponseDto
+            {
+                Data = pendingBookingResponses,
+                TotalCount = totalCount,
+                CurrentPage = currentPage,
+                PageSize = currentPageSize,
+                TotalPages = totalPages
+            };
+        }
+
         #region Private Methods
 
         private static BookingDto MapToDto(Booking booking)
@@ -300,7 +365,9 @@ namespace Snapdi.Services.Services
                 StatusId = booking.StatusId,
                 StatusName = booking.Status?.StatusName,
                 Price = booking.Price,
-                Note = booking.Note
+                Note = booking.Note,
+                PhotoTypeId = booking.PhotoTypeId,
+                Time = booking.Time
             };
         }
 
@@ -354,6 +421,66 @@ namespace Snapdi.Services.Services
             {
                 StatusId = status.StatusId,
                 StatusName = status.StatusName
+            };
+        }
+
+        private static PendingBookingResponseDto MapToPendingBookingResponseDto(Booking booking)
+        {
+            PendingBookingPhotoTypeDto? photoType = null;
+            int? duration = booking.Time;
+
+            // Get photo type details based on booking.PhotoTypeId
+            if (booking.PhotoTypeId.HasValue && booking.Photographer?.PhotographerProfile?.PhotographerPhotoTypes?.Any() == true)
+            {
+                // Find the specific photo type that was booked
+                var bookedPhotoType = booking.Photographer.PhotographerProfile.PhotographerPhotoTypes
+                    .FirstOrDefault(ppt => ppt.PhotoTypeId == booking.PhotoTypeId.Value);
+
+                if (bookedPhotoType?.PhotoType != null)
+                {
+                    photoType = new PendingBookingPhotoTypeDto
+                    {
+                        PhotoTypeId = bookedPhotoType.PhotoTypeId,
+                        PhotoTypeName = bookedPhotoType.PhotoType.PhotoTypeName,
+                        PhotoPrice = bookedPhotoType.PhotoPrice,
+                        Time = bookedPhotoType.Time
+                    };
+                }
+            }
+
+            return new PendingBookingResponseDto
+            {
+                BookingId = booking.BookingId,
+                User = booking.Customer != null ? new PendingBookingUserDto
+                {
+                    UserId = booking.Customer.UserId,
+                    AvatarUrl = string.IsNullOrWhiteSpace(booking.Customer.AvatarUrl) ? null : booking.Customer.AvatarUrl,
+                    Name = booking.Customer.Name,
+                    Email = booking.Customer.Email,
+                    Phone = string.IsNullOrEmpty(booking.Customer.Phone) ? null : booking.Customer.Phone
+                } : null,
+                Photographer = booking.Photographer != null ? new PendingBookingPhotographerDto
+                {
+                    UserId = booking.Photographer.UserId,
+                    AvatarUrl = string.IsNullOrWhiteSpace(booking.Photographer.AvatarUrl) ? null : booking.Photographer.AvatarUrl,
+                    Name = booking.Photographer.Name,
+                    Email = booking.Photographer.Email,
+                    Phone = string.IsNullOrEmpty(booking.Photographer.Phone) ? null : booking.Photographer.Phone,
+                    AvgRating = booking.Photographer.PhotographerProfile?.AvgRating,
+                    IsAvailable = booking.Photographer.PhotographerProfile?.IsAvailable ?? false,
+                    LevelPhotographer = booking.Photographer.PhotographerProfile?.LevelPhotographer
+                } : null,
+                ScheduleAt = booking.ScheduleAt,
+                LocationAddress = booking.LocationAddress,
+                Price = booking.Price,
+                Status = booking.Status != null ? new PendingBookingStatusDto
+                {
+                    StatusId = booking.Status.StatusId,
+                    StatusName = booking.Status.StatusName
+                } : null,
+                Duration = duration,
+                PhotoType = photoType,
+                Note = booking.Note
             };
         }
 
