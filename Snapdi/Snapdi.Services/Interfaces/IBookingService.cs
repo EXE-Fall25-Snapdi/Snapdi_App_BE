@@ -53,6 +53,8 @@ namespace Snapdi.Services.Interfaces
         /// </summary>
         Task<BookingDto?> UpdateBookingStatusDtoAsync(int bookingId, UpdateBookingStatusDto statusDto);
 
+        Task<BookingDto?> UpdatePhotoLinkAsync(int bookingId, PhotoLinkUpdateDto photoLink);
+
         /// <summary>
         /// Delete a booking
         /// </summary>
