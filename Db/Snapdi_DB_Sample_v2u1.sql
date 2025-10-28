@@ -64,6 +64,9 @@ INSERT INTO BookingStatus (StatusName) VALUES
 ('Pending'),
 ('Confirmed'),
 ('Paid'),
+('Going'),
+('Processing'),
+('Done'),
 ('Completed'),
 ('Cancelled');
 
