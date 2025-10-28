@@ -372,6 +372,52 @@ namespace Snapdi.Api.Controllers
             }
         }
 
+        [HttpPost("{id}/photoLink")]
+        [Authorize]
+        public async Task<ActionResult<BookingDto>> UpdatePhotoLink(int id, PhotoLinkUpdateDto photoLink)
+        {
+            try
+            {
+                var updatePhotoLink = await _bookingService.UpdatePhotoLinkAsync(id, photoLink);
+
+
+                if (updatePhotoLink == null)
+                {
+                    return NotFound(new { error = "Booking not found", message = $"Booking with ID {id} does not exist" });
+                }
+
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if(string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { error = "Unauthorized", message = "User identity not found" });
+                }
+
+                var notification = new PhotoLinkUpdateNotificationDto
+                {
+                    BookingId = updatePhotoLink.BookingId,
+                    PhotographerId = int.Parse(userId),
+                    CustomerId = updatePhotoLink.CustomerId,
+                    PhotoLink = photoLink.PhotoLink,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                await _bookingHubContext.Clients.Group("AdminBookingMonitoring")
+                    .SendAsync("BookingPhotoLinkChanged", notification);
+
+                return Ok(updatePhotoLink);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while updating the photo link",
+                    details = ex.Message
+                });
+            }
+        }
+
         /// <summary>
         /// Update booking status (Admin or Photographer can update)
         /// </summary>

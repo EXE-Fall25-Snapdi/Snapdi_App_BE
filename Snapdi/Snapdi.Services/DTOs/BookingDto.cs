@@ -286,6 +286,20 @@ namespace Snapdi.Services.DTOs
         public double Price { get; set; }
     }
 
+    public class PhotoLinkUpdateDto
+    {
+        public string PhotoLink { get; set; } = string.Empty;
+    }
+
+    public class PhotoLinkUpdateNotificationDto
+    {
+        public int BookingId { get; set; }
+        public int PhotographerId { get; set; }
+        public int? CustomerId { get; set; }
+        public string PhotoLink { get; set; } = string.Empty;
+        public DateTime UpdatedAt { get; set; }
+    }
+
     /// <summary>
     /// DTO for booking status statistics with status name
     /// </summary>
