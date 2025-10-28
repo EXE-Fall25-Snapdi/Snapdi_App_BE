@@ -52,6 +52,25 @@ namespace Snapdi.Services.DTOs
         public string? WorkLocation { get; set; }
     }
 
+    /// <summary>
+    /// DTO for updating photographer profile info (Description and WorkLocation only)
+    /// Used by photographers to update their own profile or by admins
+    /// </summary>
+    public class UpdatePhotographerInfoDto
+    {
+        /// <summary>
+        /// Photographer description/bio
+        /// </summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        public string? Description { get; set; }
+
+        /// <summary>
+        /// Photographer work location
+        /// </summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(255, ErrorMessage = "Work location cannot exceed 255 characters")]
+        public string? WorkLocation { get; set; }
+    }
+
     public class CreatePhotoPortfolioDto
     {
         public string PhotoUrl { get; set; } = string.Empty;

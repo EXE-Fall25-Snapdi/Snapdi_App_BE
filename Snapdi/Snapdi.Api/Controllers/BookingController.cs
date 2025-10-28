@@ -621,5 +621,59 @@ namespace Snapdi.Api.Controllers
             var bookings = await _bookingService.GetMyBookingsAsync(userId, page, pageSize);
             return Ok(bookings);
         }
+
+        /// <summary>
+      /// Get pending bookings for photographer (Photographer only)
+        /// </summary>
+        /// <remarks>
+  /// Returns a paginated list of pending bookings for the specified photographer.
+        /// Response includes minimal user information, scheduling details, pricing, and photo type.
+ /// </remarks>
+        /// <param name="photographerId">ID of the photographer</param>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Number of items per page (default: 10, max: 100)</param>
+     [HttpGet("photographer/{photographerId}/pending")]
+      [Authorize]
+        public async Task<ActionResult<PhotographerPendingBookingsResponseDto>> GetPhotographerPendingBookings(
+            int photographerId,
+[FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+         try
+{
+    if (photographerId <= 0)
+    {
+           return BadRequest(new
+     {
+          error = "Invalid photographer ID",
+       message = "Photographer ID must be a positive number"
+       });
     }
+
+              // Check authorization - photographer can only view their own pending bookings
+           var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+    var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+           if (currentUserIdClaim != null && int.TryParse(currentUserIdClaim.Value, out int currentUserId))
+    {
+   if (currentUserRole != "ADMIN" && currentUserId != photographerId)
+              {
+        return Forbid();
+}
+   }
+
+var result = await _bookingService.GetPhotographerPendingBookingsAsync(photographerId, page, pageSize);
+   return Ok(result);
+            }
+        catch (Exception ex)
+   {
+      return StatusCode(500, new
+       {
+    error = "Internal server error",
+       message = "An error occurred while retrieving pending bookings",
+  details = ex.Message
+     });
+    }
+   }
+ }
 }
