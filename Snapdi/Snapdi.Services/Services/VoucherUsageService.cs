@@ -22,17 +22,20 @@ namespace Snapdi.Services.Services
         public async Task AddAsync(VoucherUsage voucherUsage)
         {
             await _voucherUsageRepository.AddAsync(voucherUsage);
+            await _voucherUsageRepository.SaveChangesAsync();
         }
 
-        public async Task ApplyVoucher(int userId, int bookingId, int voucherId)
+        public async Task ApplyVoucher(int userId, int bookingId, string code)
         {
-            var voucher = await _voucherRepository.GetByIdAsync(voucherId);
+            var voucher = await _voucherRepository.GetByCodeAsync(code);
 
             if(voucher == null || !voucher.IsActive)
             {
                 throw new Exception("Invalid or inactive voucher.");
             }
-            
+
+            var voucherId = voucher.VoucherId;
+
             var date = DateTime.UtcNow;
 
             if(voucher.StartDate < date || voucher.EndDate > date)
@@ -95,6 +98,8 @@ namespace Snapdi.Services.Services
 
             await _voucherUsageRepository.AddAsync(voucherUsage);
             await _bookingRepository.UpdateAsync(booking);
+            await _voucherUsageRepository.SaveChangesAsync();
+            await _bookingRepository.SaveChangesAsync();
         }
 
         public async Task<int> CountAsync(int voucherId)

@@ -217,6 +217,26 @@ namespace Snapdi.Services.Services
             return MapToDto(bookingWithDetails!);
         }
 
+        public async Task<BookingDto?> UpdatePhotoLinkAsync(int bookingId, PhotoLinkUpdateDto photoLink)
+        {
+            var booking = await _bookingRepo.GetByIdAsync(bookingId);
+            if (booking == null)
+                return null;
+
+            booking.PhotoLink = photoLink.PhotoLink;
+            booking.CustomerId = booking.CustomerId;
+            
+            var status = await _statusRepo.GetByNameAsync("Completed");
+
+            booking.StatusId = status.StatusId;
+
+            await _bookingRepo.UpdateAsync(booking);
+            await _bookingRepo.SaveChangesAsync();
+            
+            var bookingWithDetails = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
+            return MapToDto(bookingWithDetails!);
+        }
+
         public async Task<bool> DeleteBookingAsync(int bookingId)
         {
             var booking = await _bookingRepo.GetByIdAsync(bookingId);

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Snapdi.Repositories.Models;
 using Snapdi.Services.Interfaces;
+using System.Security.Claims;
 
 namespace Snapdi.Api.Controllers
 {
@@ -30,11 +31,16 @@ namespace Snapdi.Api.Controllers
         }
 
         [HttpPost("apply")]
-        public async Task<IActionResult> ApplyVoucher(int userId, int bookingId, int voucherId)
+        public async Task<IActionResult> ApplyVoucher(int bookingId, string code)
         {
             try
             {
-                await _voucherUsageService.ApplyVoucher(userId, bookingId, voucherId);
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return Unauthorized("User ID claim is missing or invalid.");
+                }
+                await _voucherUsageService.ApplyVoucher(userId, bookingId, code);
                 return Ok("Voucher applied successfully.");
             }
             catch (Exception ex)
