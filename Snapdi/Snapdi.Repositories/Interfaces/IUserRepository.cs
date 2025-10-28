@@ -93,5 +93,12 @@ namespace Snapdi.Repositories.Interfaces
         
         // Update photographer level
         Task UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
+        
+        /// <summary>
+        /// Get count of users by role ID
+        /// </summary>
+        /// <param name="roleId">Optional role ID filter (null returns all users count)</param>
+        /// <returns>Count of users</returns>
+        Task<int> GetUserCountByRoleAsync(int? roleId = null);
     }
 }

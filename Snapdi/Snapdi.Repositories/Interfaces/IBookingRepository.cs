@@ -76,5 +76,18 @@ namespace Snapdi.Repositories.Interfaces
         /// Get bookings for a user with pagination, sorted by BookingId desc
         /// </summary>
         Task<(IEnumerable<Booking> Bookings, int TotalCount)> GetBookingsForUserPagedAsync(int userId, int page, int pageSize);
+
+        /// <summary>
+        /// Get count of completed bookings
+        /// </summary>
+        /// <param name="date">Optional date filter (null returns all completed bookings count)</param>
+        /// <returns>Count of completed bookings</returns>
+        Task<int> GetCompletedBookingsCountAsync(DateTime? date = null);
+
+        /// <summary>
+        /// Get total revenue from completed bookings
+        /// </summary>
+        /// <returns>Total revenue from all completed bookings</returns>
+        Task<double> GetTotalRevenueAsync();
     }
 }

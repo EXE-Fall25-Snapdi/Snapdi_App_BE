@@ -393,6 +393,15 @@ namespace Snapdi.Repositories.Repositories
             }
         }
 
+        public async Task<int> GetUserCountByRoleAsync(int? roleId = null)
+        {
+            if (roleId.HasValue)
+            {
+                return await _context.Users.CountAsync(u => u.RoleId == roleId.Value);
+            }
+            return await _context.Users.CountAsync();
+        }
+
         public async Task<(IEnumerable<User> Photographers, int TotalCount)> SearchPhotographersAsync(
             int page,
             int pageSize,

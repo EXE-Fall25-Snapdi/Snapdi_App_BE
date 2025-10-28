@@ -216,6 +216,38 @@ namespace Snapdi.Repositories.Repositories
             return (items, total);
         }
 
+        public async Task<int> GetCompletedBookingsCountAsync(DateTime? date = null)
+        {
+            var query = _dbSet
+                .Include(b => b.Status)
+                .Where(b => b.Status != null && 
+                           (b.Status.StatusName.ToLower() == "done" ||
+                            b.Status.StatusName.ToLower() == "completed" ||
+                            b.Status.StatusName.ToLower() == "finished"));
+
+            if (date.HasValue)
+            {
+                var startOfDay = date.Value.Date;
+                var endOfDay = startOfDay.AddDays(1).AddSeconds(-1);
+                query = query.Where(b => b.ScheduleAt >= startOfDay && b.ScheduleAt <= endOfDay);
+            }
+
+            return await query.CountAsync();
+        }
+
+        public async Task<double> GetTotalRevenueAsync()
+        {
+            var totalRevenue = await _dbSet
+                .Include(b => b.Status)
+                .Where(b => b.Status != null && 
+                           (b.Status.StatusName.ToLower() == "done" ||
+                            b.Status.StatusName.ToLower() == "completed" ||
+                            b.Status.StatusName.ToLower() == "finished"))
+                .SumAsync(b => b.Price);
+
+            return totalRevenue;
+        }
+
         public async Task UpdateBookingStatusAsync(int bookingId, int statusId)
         {
             var booking = await _context.Bookings.FindAsync(bookingId);
