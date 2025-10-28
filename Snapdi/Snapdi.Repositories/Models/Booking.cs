@@ -36,6 +36,17 @@ public partial class Booking
     [StringLength(500)]
     public string? PhotoLink { get; set; }
 
+    /// <summary>
+    /// Photo type ID for the booking
+    /// </summary>
+    [Column("PhotoTypeID")]
+    public int? PhotoTypeId { get; set; }
+
+    /// <summary>
+    /// Duration/time for the booking in minutes
+    /// </summary>
+    public int? Time { get; set; }
+
     [ForeignKey("CustomerId")]
     [InverseProperty("BookingCustomers")]
     public virtual User? Customer { get; set; }
