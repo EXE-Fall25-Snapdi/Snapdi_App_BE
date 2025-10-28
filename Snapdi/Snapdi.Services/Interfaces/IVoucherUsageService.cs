@@ -9,7 +9,7 @@ namespace Snapdi.Services.Interfaces
 {
     public interface IVoucherUsageService
     {
-        Task ApplyVoucher(int userId, int bookingId, int voucherId);
+        Task ApplyVoucher(int userId, int bookingId, string code);
         Task<bool> HasUserUsedVoucherAsync(int userId, int voucherId);
         Task AddAsync(VoucherUsage voucherUsage);
         Task<int> CountAsync(int voucherId);

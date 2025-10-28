@@ -16,12 +16,18 @@ namespace Snapdi.Api.Controllers
         private readonly ICloudinaryService _cloudinaryService;
         private readonly SnapdiDbV2Context _db;
         private readonly ILogger<PaymentsController> _logger;
+        private readonly IPaymentsService _paymentService;
 
-        public PaymentsController(ICloudinaryService cloudinaryService, SnapdiDbV2Context db, ILogger<PaymentsController> logger)
+        public PaymentsController(
+            ICloudinaryService cloudinaryService,
+            SnapdiDbV2Context db,
+            ILogger<PaymentsController> logger,
+            IPaymentsService paymentService)
         {
             _cloudinaryService = cloudinaryService;
             _db = db;
             _logger = logger;
+            _paymentService = paymentService;
         }
 
         /// <summary>
@@ -337,25 +343,6 @@ namespace Snapdi.Api.Controllers
             }
         }
 
-        //[HttpGet("{id}")]
-        //[Authorize]
-        //public async Task<IActionResult> GetPayment(int id)
-        //{
-        //    var p = await _db.Payments.FindAsync(id);
-        //    if (p == null) return NotFound(new { success = false, message = "Payment not found" });
-
-        //    return Ok(new
-        //    {
-        //        p.PaymentId,
-        //        p.BookingId,
-        //        p.Amount,
-        //        p.FeePolicyId,
-        //        p.TransactionMethod,
-        //        p.PaymentStatusId,
-        //        p.PaymentDate
-        //    });
-        //}
-
         [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPaymentById(int id)
@@ -376,6 +363,217 @@ namespace Snapdi.Api.Controllers
                 status = payment.PaymentStatus?.StatusName ?? "Unknown",
                 paymentDate = payment.PaymentDate
             });
+        }
+
+        /// <summary>
+        /// Search payments with filtering and paging (Admin only)
+        /// </summary>
+        [HttpPost("search")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<PaymentSearchResultDto>> SearchPayments(PaymentSearchDto searchDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new
+                    {
+                        error = "Validation failed",
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                var result = await _paymentService.SearchPaymentsAsync(searchDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while searching payments",
+                    details = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get payment search summary statistics (Admin only)
+        /// </summary>
+        [HttpPost("search/summary")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<PaymentSearchSummaryDto>> GetPaymentSearchSummary(PaymentSearchDto searchDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new
+                    {
+                        error = "Validation failed",
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                var summary = await _paymentService.GetPaymentSearchSummaryAsync(searchDto);
+                return Ok(summary);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while getting payment summary",
+                    details = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get payments for current user (Customer or Photographer)
+        /// </summary>
+        [HttpGet("my-payments")]
+        [Authorize]
+        public async Task<ActionResult<PaymentSearchResultDto>> GetMyPayments([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return BadRequest(new { error = "Invalid token", message = "User ID not found in token claims" });
+                }
+
+                PaymentSearchResultDto result;
+
+                // If user is photographer, get payments where they are the photographer
+                if (userRole == "PHOTOGRAPHER")
+                {
+                    result = await _paymentService.GetPaymentsByPhotographerIdAsync(userId, page, pageSize);
+                }
+                // Otherwise, get payments where they are the customer
+                else
+                {
+                    result = await _paymentService.GetPaymentsByCustomerIdAsync(userId, page, pageSize);
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while retrieving your payments",
+                    details = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get payments by booking ID (Customer and Photographer can access their own bookings)
+        /// </summary>
+        //[HttpGet("booking/{bookingId}")]
+        //[Authorize]
+        //public async Task<ActionResult<IEnumerable<PaymentDto>>> GetPaymentsByBookingId(int bookingId)
+        //{
+        //    try
+        //    {
+        //        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        //        var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        //        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        //        {
+        //            return BadRequest(new { error = "Invalid token", message = "User ID not found in token claims" });
+        //        }
+
+        //        // Verify user has access to this booking (unless admin)
+        //        if (userRole != "ADMIN")
+        //        {
+        //            var booking = await _db.Bookings.FindAsync(bookingId);
+        //            if (booking == null)
+        //            {
+        //                return NotFound(new { error = "Booking not found", message = $"Booking with ID {bookingId} does not exist" });
+        //            }
+
+        //            if (booking.CustomerId != userId && booking.PhotographerId != userId)
+        //            {
+        //                throw new Exception("You can only access payments for your own bookings");
+        //            }
+        //        }
+
+        //        var payments = await _paymentService.GetPaymentsByBookingIdAsync(bookingId);
+        //        return Ok(payments);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new
+        //        {
+        //            error = "Internal server error",
+        //            message = "An error occurred while retrieving booking payments",
+        //            details = ex.Message
+        //        });
+        //    }
+        //}
+
+        /// <summary>
+        /// Get detailed payment information by ID (Admin, or users involved in the payment)
+        /// </summary>
+        [HttpGet("details/{id}")]
+        [Authorize]
+        public async Task<ActionResult<PaymentDto>> GetPaymentDetails(int id)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return BadRequest(new { error = "Invalid token", message = "User ID not found in token claims" });
+                }
+
+                var payment = await _paymentService.GetPaymentByIdAsync(id);
+                if (payment == null)
+                {
+                    return NotFound(new { error = "Payment not found", message = $"Payment with ID {id} does not exist" });
+                }
+
+                // Verify user has access to this payment (unless admin)
+                if (userRole != "ADMIN")
+                {
+                    var hasAccess = payment.Booking?.Customer?.UserId == userId ||
+                                   payment.Booking?.Photographer?.UserId == userId;
+
+                    if (!hasAccess)
+                    {
+                        throw new Exception("You can only access your own payment details");
+                    }
+                }
+
+                return Ok(payment);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while retrieving payment details",
+                    details = ex.Message
+                });
+            }
         }
     }
 }

@@ -34,6 +34,11 @@ namespace Snapdi.Api.Hubs
             await Clients.Group("AdminBookingMonitoring").SendAsync("BookingStatusChanged", notification);
         }
 
+        public async Task NotifyPhotoLinkChange(PhotoLinkUpdateNotificationDto notification)
+        {
+            await Clients.Group("AdminBookingMonitoring").SendAsync("BookingPhotoLinkChanged", notification);
+        }
+
         /// <summary>
         /// Send new booking notification to all admins
         /// </summary>

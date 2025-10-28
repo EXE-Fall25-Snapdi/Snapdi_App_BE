@@ -1,15 +1,11 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Snapdi.Api.Services;
-using Snapdi.Api.Hubs;
 using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
-using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
 using Snapdi.Services.Interfaces;
 using Snapdi.Services.Interfaces.Snapdi.Services.Interfaces;
@@ -23,34 +19,34 @@ var builder = WebApplication.CreateBuilder(args);
 Env.Load();
 
 // Get configuration from environment variables
-var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? 
+var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING") ??
                       builder.Configuration.GetConnectionString("DefaultConnection");
 
-var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? 
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ??
             builder.Configuration["JWT:Key"];
 
-var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? 
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ??
                builder.Configuration["JWT:Issuer"];
 
-var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? 
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ??
                  builder.Configuration["JWT:Audience"];
 
-var jwtExpirationHours = Environment.GetEnvironmentVariable("JWT_EXPIRATION_HOURS") ?? 
+var jwtExpirationHours = Environment.GetEnvironmentVariable("JWT_EXPIRATION_HOURS") ??
                        builder.Configuration["JWT:ExpirationHours"];
 
-var appBaseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL") ?? 
+var appBaseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL") ??
                 builder.Configuration["App:BaseUrl"];
 
-var cloudinaryCloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME") ?? 
+var cloudinaryCloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME") ??
                          builder.Configuration["Cloudinary:CloudName"];
 
-var cloudinaryApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY") ?? 
+var cloudinaryApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY") ??
                       builder.Configuration["Cloudinary:ApiKey"];
 
-var cloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET") ?? 
+var cloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET") ??
                          builder.Configuration["Cloudinary:ApiSecret"];
 
-var cloudinaryUploadPreset = Environment.GetEnvironmentVariable("CLOUDINARY_UPLOAD_PRESET") ?? 
+var cloudinaryUploadPreset = Environment.GetEnvironmentVariable("CLOUDINARY_UPLOAD_PRESET") ??
                             builder.Configuration["Cloudinary:UploadPreset"] ?? "snapdi_default";
 
 // Validate required configuration
@@ -165,6 +161,7 @@ builder.Services.AddScoped<IStyleRepository, StyleRepository>();
 builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleRepository>();
 builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();
 builder.Services.AddScoped<IPhotographerPhotoTypeRepository, PhotographerPhotoTypeRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -182,6 +179,7 @@ builder.Services.AddScoped<IStyleService, StyleService>();
 builder.Services.AddScoped<IPhotographerStyleService, PhotographerStyleService>();
 builder.Services.AddScoped<IPhotoTypeService, PhotoTypeService>();
 builder.Services.AddScoped<IPhotographerPhotoTypeService, PhotographerPhotoTypeService>();
+builder.Services.AddScoped<IPaymentsService, PaymentService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
@@ -198,9 +196,9 @@ builder.Services.AddSignalR(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Snapdi API", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Snapdi API",
         Version = "v1",
         Description = "API for Snapdi Photography Platform with Real-time Booking Updates",
         Contact = new OpenApiContact
