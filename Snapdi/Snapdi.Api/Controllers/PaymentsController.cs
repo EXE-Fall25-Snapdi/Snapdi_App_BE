@@ -255,7 +255,7 @@ namespace Snapdi.Api.Controllers
 
                 // Find or create BookingStatus 'Confirmed'
                 var completedBookingStatus = await _db.BookingStatuses
-                    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "confirmed");
+                    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "paid");
 
                 if (completedBookingStatus == null)
                 {
