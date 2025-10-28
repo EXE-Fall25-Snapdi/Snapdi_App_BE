@@ -160,6 +160,90 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Update photographer profile information (Description and WorkLocation)
+        /// Photographers can update their own profile, Admin can update any photographer's profile
+        /// </summary>
+        /// <remarks>
+        /// Updates photographer description and work location.
+        /// 
+        /// Sample request:
+        /// {
+        ///   "description": "Professional wedding and portrait photographer with 5+ years experience",
+        ///   "workLocation": "Ho Chi Minh City, Vietnam"
+        /// }
+        /// 
+        /// Both fields are optional. Only provided fields will be updated.
+        /// </remarks>
+        [HttpPatch("{id}/profile")]
+        [Authorize]
+        public async Task<ActionResult> UpdatePhotographerProfile(int id, [FromBody] UpdatePhotographerInfoDto updateDto)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest(new { error = "Invalid user ID", message = "User ID must be a positive number" });
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new
+                    {
+                        error = "Validation failed",
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                // Check if photographer exists
+                var photographer = await _userService.GetUserWithPhotographerProfileAsync(id);
+                if (photographer == null || photographer.PhotographerProfile == null)
+                {
+                    return NotFound(new { error = "Photographer not found", message = $"User with ID {id} does not exist or has no photographer profile" });
+                }
+
+                // Check authorization: user can update their own profile OR admin can update any
+                var currentUserIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                var currentUserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+                if (currentUserIdClaim != null && int.TryParse(currentUserIdClaim.Value, out int currentUserId))
+                {
+                    // User can update their own profile OR admin can update any photographer's profile
+                    if (currentUserId != id && currentUserRole != "ADMIN")
+                    {
+                        return Forbid();
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { error = "Invalid token", message = "Could not determine current user" });
+                }
+
+                var result = await _userService.UpdatePhotographerProfileAsync(id, updateDto);
+                if (!result)
+                {
+                    return BadRequest(new { error = "Update failed", message = "Failed to update photographer profile" });
+                }
+
+                return Ok(new
+                {
+                    userId = id,
+                    description = updateDto.Description,
+                    workLocation = updateDto.WorkLocation,
+                    message = "Photographer profile updated successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while updating photographer profile", details = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Search photographers with advanced filtering (POST method)
         /// </summary>
         /// <remarks>
