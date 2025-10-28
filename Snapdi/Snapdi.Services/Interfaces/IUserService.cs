@@ -17,6 +17,7 @@ namespace Snapdi.Services.Interfaces
         Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto);
         Task<bool> DeleteUserAsync(int userId);
         Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto);
+        Task<bool> UpdateAvatarAsync(int userId, string avatarUrl);
         Task<bool> UpdateRefreshTokenAsync(int userId, string refreshToken, DateTime expiredAt);
         Task<bool> UpdateUserStatusAsync(int userId, bool isActive, bool isVerify);
         Task<bool> IsEmailExistsAsync(string email);
@@ -43,6 +44,12 @@ namespace Snapdi.Services.Interfaces
         // Photographer search method
         Task<PhotographerSearchResultDto> SearchPhotographersAsync(PhotographerSearchDto searchDto);
         
+        // Find snappers (simplified photographer search)
+        Task<FindSnapperResultDto> FindSnappersAsync(FindSnapperDto findSnapperDto);
+
+        // Find snappers nearby for map display
+        Task<FindSnappersNearbyResultDto> FindSnappersNearbyAsync(FindSnappersNearbyDto findSnappersNearbyDto);
+        
         // Get photographers pending level assignment (for admin)
         Task<IEnumerable<UserWithPhotographerDto>> GetPhotographersPendingLevelAssignmentAsync();
         
@@ -54,6 +61,9 @@ namespace Snapdi.Services.Interfaces
         
         // Update photographer level (for admin)
         Task<bool> UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
+        
+        // Update photographer availability status and location
+        Task<bool> UpdatePhotographerStatusAsync(int userId, bool isAvailable, LocationCoordinatesDto? currentLocation = null);
         
         // Photo portfolio method
         Task<IEnumerable<PhotoPortfolioDto>> GetPhotoPortfoliosByUserIdAsync(int userId);

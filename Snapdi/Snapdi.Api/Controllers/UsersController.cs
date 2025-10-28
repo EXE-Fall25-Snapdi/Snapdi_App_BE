@@ -383,6 +383,52 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Update user avatar (User can update own avatar, Admin can update any)
+        /// </summary>
+        [HttpPut("{id}/avatar")]
+        [Authorize] // Authenticated users only
+        public async Task<ActionResult> UpdateAvatar(int id, [FromBody][Required] string avatarUrl)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return BadRequest(new { error = "Invalid user ID", message = "User ID must be a positive number" });
+                }
+                if (string.IsNullOrEmpty(avatarUrl))
+                {
+                    return BadRequest(new { error = "Invalid avatar URL", message = "Avatar URL cannot be empty" });
+                }
+                // Check if user can update this avatar
+                var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                
+                if (currentUserIdClaim != null && int.TryParse(currentUserIdClaim.Value, out int currentUserId))
+                {
+                    // User can update their own avatar OR admin can update any avatar
+                    if (currentUserId != id && currentUserRole != "ADMIN")
+                    {
+                        return Forbid("You can only update your own avatar unless you are an admin");
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { error = "Invalid token", message = "Could not determine current user" });
+                }
+                var result = await _userService.UpdateAvatarAsync(id, avatarUrl);
+                if (!result)
+                {
+                    return NotFound(new { error = "User not found", message = $"User with ID {id} does not exist" });
+                }
+                return Ok(new { message = "Avatar updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while updating the avatar", details = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Get users by role (Admin only)
         /// </summary>
         [HttpGet("role/{roleId}")]
@@ -513,88 +559,12 @@ namespace Snapdi.Api.Controllers
             }
         }
 
-
-
         /// <summary>
-        /// Update photographer level (Admin only)
+        /// Search photographers with filtering and paging (Authenticated users)
         /// </summary>
-        [HttpPatch("{id}/photographer-level")]
-        [Authorize(Roles = "ADMIN")]
-        public async Task<ActionResult> UpdatePhotographerLevel(int id, [FromBody] UpdatePhotographerLevelDto updateLevelDto)
-        {
-            try
-            {
-                if (id <= 0)
-                {
-                    return BadRequest(new { error = "Invalid user ID", message = "User ID must be a positive number" });
-                }
-
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(new { 
-                        error = "Validation failed", 
-                        message = "Please check your input data",
-                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
-                            .ToDictionary(
-                                kvp => kvp.Key,
-                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
-                            )
-                    });
-                }
-
-                var photographer = await _userService.GetUserWithPhotographerProfileAsync(id);
-                if (photographer == null || photographer.PhotographerProfile == null)
-                {
-                    return NotFound(new { error = "Photographer not found", message = $"User with ID {id} does not exist or has no photographer profile" });
-                }
-
-                var result = await _userService.UpdatePhotographerLevelAsync(id, updateLevelDto.LevelPhotographer);
-                if (!result)
-                {
-                    return BadRequest(new { error = "Update failed", message = "Failed to update photographer level" });
-                }
-
-                return Ok(new { 
-                    userId = id,
-                    newLevel = updateLevelDto.LevelPhotographer
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while updating photographer level", details = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Search photographers with advanced filtering (POST method)
-        /// </summary>
-        /// <remarks>
-        /// Advanced search for photographers with comprehensive filtering options.
-        /// 
-        /// Sample request:
-        /// {
-        ///   "searchTerm": "john",
-        ///   "locationCity": "Ho Chi Minh",
-        ///   "levelPhotographer": "Professional",
-        ///   "isAvailable": true,
-        ///   "isVerify": true,
-        ///   "isActive": true,
-        ///   "minRating": 4.0,
-        ///   "maxRating": 5.0,
-        ///   "yearsOfExperience": "5+",
-        ///   "hasPortfolio": true,
-        ///   "createdFrom": "2024-01-01T00:00:00Z",
-        ///   "createdTo": "2024-12-31T23:59:59Z",
-        ///   "sortBy": "rating",
-        ///   "sortDirection": "desc",
-        ///   "pageNumber": 1,
-        ///   "pageSize": 10
-        /// }
-        /// 
-        /// All filters are optional. The endpoint returns photographers with their profiles and portfolio information.
-        /// </remarks>
         [HttpPost("photographers/search")]
-        public async Task<ActionResult<PhotographerSearchResultDto>> SearchPhotographers([FromBody] PhotographerSearchDto searchDto)
+        [Authorize] // Any authenticated user can search for photographers
+        public async Task<ActionResult<PhotographerSearchResultDto>> SearchPhotographers(PhotographerSearchDto searchDto)
         {
             try
             {
@@ -608,30 +578,6 @@ namespace Snapdi.Api.Controllers
                                 kvp => kvp.Key,
                                 kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                             )
-                    });
-                }
-
-                // Validate and normalize pagination
-                if (searchDto.PageNumber < 1) searchDto.PageNumber = 1;
-                if (searchDto.PageSize < 1 || searchDto.PageSize > 100) searchDto.PageSize = 10;
-
-                // Validate rating range
-                if (searchDto.MinRating.HasValue && searchDto.MaxRating.HasValue && 
-                    searchDto.MinRating.Value > searchDto.MaxRating.Value)
-                {
-                    return BadRequest(new { 
-                        error = "Invalid rating range", 
-                        message = "Minimum rating cannot be greater than maximum rating" 
-                    });
-                }
-
-                // Validate date range
-                if (searchDto.CreatedFrom.HasValue && searchDto.CreatedTo.HasValue && 
-                    searchDto.CreatedFrom.Value > searchDto.CreatedTo.Value)
-                {
-                    return BadRequest(new { 
-                        error = "Invalid date range", 
-                        message = "Created from date cannot be after created to date" 
                     });
                 }
 
@@ -640,13 +586,74 @@ namespace Snapdi.Api.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { 
-                    error = "Internal server error", 
-                    message = "An error occurred while searching photographers", 
-                    details = ex.Message 
-                });
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while searching photographers", details = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Find snappers (photographers) based on availability, city, and level (Public endpoint)
+        /// </summary>
+        [HttpPost("snappers/find")]
+        public async Task<ActionResult<FindSnapperResultDto>> FindSnappers(FindSnapperDto findSnapperDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { 
+                        error = "Validation failed", 
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                var result = await _userService.FindSnappersAsync(findSnapperDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while finding snappers", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Find snappers nearby for map display (Public endpoint)
+        /// Returns photographers within a specified radius of a geographic location.
+        /// Optimized for displaying photographers on a map.
+        /// </summary>
+        /// <param name="findSnappersNearbyDto">Search parameters including coordinates and radius</param>
+        /// <returns>List of nearby photographers with distance information</returns>
+        [HttpPost("snappers/nearby")]
+        public async Task<ActionResult<FindSnappersNearbyResultDto>> FindSnappersNearby(FindSnappersNearbyDto findSnappersNearbyDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { 
+                        error = "Validation failed", 
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                var result = await _userService.FindSnappersNearbyAsync(findSnappersNearbyDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Internal server error", message = "An error occurred while finding nearby snappers", details = ex.Message });
+            }
+        }
+
 
 
         #region Private Helper Methods
@@ -694,24 +701,7 @@ namespace Snapdi.Api.Controllers
         #endregion
     }
 
-    public class UpdateUserStatusDto
-    {
-        public bool IsActive { get; set; }
-        public bool IsVerify { get; set; }
-    }
+  
 
-    /// <summary>
-    /// DTO for updating photographer level (Admin only)
-    /// </summary>
-    public class UpdatePhotographerLevelDto
-    {
-        /// <summary>
-        /// Photographer level - must be one of the predefined levels
-        /// Available levels: "Beginner", "Intermediate", "Advanced", "Professional", "Expert"
-        /// </summary>
-        /// <example>Professional</example>
-        [Required(ErrorMessage = "Level photographer is required")]
-        [MaxLength(50, ErrorMessage = "Level photographer cannot exceed 50 characters")]
-        public string LevelPhotographer { get; set; } = string.Empty;
-    }
+    
 }

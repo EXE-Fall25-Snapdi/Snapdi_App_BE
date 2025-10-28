@@ -32,5 +32,10 @@ namespace Snapdi.Services.DTOs
 
         [MaxLength(255)]
         public string? AvatarUrl { get; set; }
+        
+        /// <summary>
+        /// Initial location coordinates for the user
+        /// </summary>
+        public LocationCoordinatesDto? CurrentLocation { get; set; }
     }
 }

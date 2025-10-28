@@ -4,6 +4,7 @@ namespace Snapdi.Repositories.Interfaces
 {
     public interface IUserRepository : IBaseRepository<User>
     {
+        Task<User?> GetAdminUserAsync();
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByPhoneAsync(string phone);
         Task<User?> GetByEmailOrPhoneAsync(string emailOrPhone);
@@ -18,6 +19,7 @@ namespace Snapdi.Repositories.Interfaces
         Task<bool> IsPhoneExistsAsync(string phone);
         Task UpdateRefreshTokenAsync(int userId, string refreshToken, DateTime expiredAt);
         Task UpdatePasswordAsync(int userId, string newPassword);
+        Task UpdateAvatarAsync(int userId, string avatarUrl);
         Task UpdateUserStatusAsync(int userId, bool isActive, bool isVerify);
         Task UpdateEmailVerificationTokenAsync(int userId, string verificationToken, DateTime expiredAt);
         Task VerifyEmailAsync(int userId);
@@ -50,10 +52,27 @@ namespace Snapdi.Repositories.Interfaces
             double? maxRating = null,
             string? yearsOfExperience = null,
             bool? hasPortfolio = null,
+            List<int>? styleIds = null,
+            string? workLocation = null,
+            List<int>? photoTypeIds = null,
+            double? minPrice = null,
+            double? maxPrice = null,
             DateTime? createdFrom = null,
             DateTime? createdTo = null,
             string? sortBy = "createdAt",
             string? sortDirection = "desc");
+
+        // Find snappers nearby with radius-based geographic filtering
+        Task<List<(User User, double DistanceInKm)>> FindSnappersNearbyAsync(
+            double latitude,
+            double longitude,
+            double radiusInKm,
+            int limit,
+            bool? isAvailable = null,
+            List<int>? photoTypeIds = null,
+            List<int>? styleIds = null,
+            double? minPrice = null,
+            double? maxPrice = null);
             
         // Get photographers pending level assignment
         Task<IEnumerable<User>> GetPhotographersPendingLevelAssignmentAsync();
@@ -74,5 +93,12 @@ namespace Snapdi.Repositories.Interfaces
         
         // Update photographer level
         Task UpdatePhotographerLevelAsync(int userId, string levelPhotographer);
+        
+        /// <summary>
+        /// Get count of users by role ID
+        /// </summary>
+        /// <param name="roleId">Optional role ID filter (null returns all users count)</param>
+        /// <returns>Count of users</returns>
+        Task<int> GetUserCountByRoleAsync(int? roleId = null);
     }
 }

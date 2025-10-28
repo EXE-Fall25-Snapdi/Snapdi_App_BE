@@ -22,19 +22,19 @@ public partial class Booking
     [Column(TypeName = "datetime")]
     public DateTime ScheduleAt { get; set; }
 
-    [StringLength(100)]
-    public string? LocationCity { get; set; }
-
     [StringLength(255)]
     public string? LocationAddress { get; set; }
-
-    [Column("StyleID")]
-    public int? StyleId { get; set; }
 
     [Column("StatusID")]
     public int? StatusId { get; set; }
 
     public double Price { get; set; }
+
+    [StringLength(1000)]
+    public string? Note { get; set; }
+
+    [StringLength(500)]
+    public string? PhotoLink { get; set; }
 
     [ForeignKey("CustomerId")]
     [InverseProperty("BookingCustomers")]
@@ -53,10 +53,6 @@ public partial class Booking
     [ForeignKey("StatusId")]
     [InverseProperty("Bookings")]
     public virtual BookingStatus? Status { get; set; }
-
-    [ForeignKey("StyleId")]
-    [InverseProperty("Bookings")]
-    public virtual Style? Style { get; set; }
 
     [InverseProperty("Booking")]
     public virtual ICollection<VoucherUsage> VoucherUsages { get; set; } = new List<VoucherUsage>();

@@ -29,7 +29,16 @@ public partial class PhotographerProfile
     [StringLength(50)]
     public string? LevelPhotographer { get; set; }
 
+    [StringLength(255)]
+    public string? WorkLocation { get; set; }
+
     [ForeignKey("UserId")]
     [InverseProperty("PhotographerProfile")]
     public virtual User User { get; set; } = null!;
+
+    [InverseProperty("PhotographerProfile")]
+    public virtual ICollection<PhotographerStyle> PhotographerStyles { get; set; } = new List<PhotographerStyle>();
+
+    [InverseProperty("PhotographerProfile")]
+    public virtual ICollection<PhotographerPhotoType> PhotographerPhotoTypes { get; set; } = new List<PhotographerPhotoType>();
 }

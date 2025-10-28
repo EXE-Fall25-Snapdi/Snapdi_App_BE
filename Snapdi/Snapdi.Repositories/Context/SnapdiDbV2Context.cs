@@ -40,6 +40,12 @@ public partial class SnapdiDbV2Context : DbContext
 
     public virtual DbSet<PhotographerProfile> PhotographerProfiles { get; set; }
 
+    public virtual DbSet<PhotographerStyle> PhotographerStyles { get; set; }
+
+    public virtual DbSet<PhotoType> PhotoTypes { get; set; }
+
+    public virtual DbSet<PhotographerPhotoType> PhotographerPhotoTypes { get; set; }
+
     public virtual DbSet<Review> Reviews { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -52,6 +58,15 @@ public partial class SnapdiDbV2Context : DbContext
 
     public virtual DbSet<VoucherUsage> VoucherUsages { get; set; }
 
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            // Enable NetTopologySuite for spatial data support
+            optionsBuilder.UseSqlServer(o => o.UseNetTopologySuite());
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,13 +99,13 @@ public partial class SnapdiDbV2Context : DbContext
         {
             entity.HasKey(e => e.BookingId).HasName("PK__Booking__73951ACDC273B8F2");
 
+            entity.Property(e => e.Note).HasMaxLength(1000);
+
             entity.HasOne(d => d.Customer).WithMany(p => p.BookingCustomers).HasConstraintName("FK__Booking__Custome__534D60F1");
 
             entity.HasOne(d => d.Photographer).WithMany(p => p.BookingPhotographers).HasConstraintName("FK__Booking__Photogr__5441852A");
 
             entity.HasOne(d => d.Status).WithMany(p => p.Bookings).HasConstraintName("FK__Booking__StatusI__5629CD9C");
-
-            entity.HasOne(d => d.Style).WithMany(p => p.Bookings).HasConstraintName("FK__Booking__StyleID__5535A963");
         });
 
         modelBuilder.Entity<BookingStatus>(entity =>
@@ -171,6 +186,41 @@ public partial class SnapdiDbV2Context : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.PhotographerProfile).HasConstraintName("FK__Photograp__UserI__4AB81AF0");
         });
 
+        modelBuilder.Entity<PhotographerStyle>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.StyleId }).HasName("PK__Photogra__PhotographerStyle");
+
+            entity.HasOne(d => d.PhotographerProfile).WithMany(p => p.PhotographerStyles)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Photograp__UserI__PhotographerStyle");
+
+            entity.HasOne(d => d.Style).WithMany(p => p.PhotographerStyles)
+                .HasForeignKey(d => d.StyleId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Photograp__Style__PhotographerStyle");
+        });
+
+        modelBuilder.Entity<PhotoType>(entity =>
+        {
+            entity.HasKey(e => e.PhotoTypeId).HasName("PK__PhotoTyp__8AD147A0C035264E");
+        });
+
+        modelBuilder.Entity<PhotographerPhotoType>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.PhotoTypeId }).HasName("PK__Photogra__PhotographerPhotoType");
+
+            entity.HasOne(d => d.PhotographerProfile).WithMany(p => p.PhotographerPhotoTypes)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Photograp__UserI__PhotographerPhotoType");
+
+            entity.HasOne(d => d.PhotoType).WithMany(p => p.PhotographerPhotoTypes)
+                .HasForeignKey(d => d.PhotoTypeId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Photograp__Photo__PhotographerPhotoType");
+        });
+
         modelBuilder.Entity<Review>(entity =>
         {
             entity.HasKey(e => e.ReviewId).HasName("PK__Review__74BC79AE14FA1EB8");
@@ -199,6 +249,10 @@ public partial class SnapdiDbV2Context : DbContext
             entity.HasKey(e => e.UserId).HasName("PK__User__1788CCAC98BF1C87");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasConstraintName("FK__User__RoleID__3C69FB99");
+
+            // Configure spatial data for CurrentLocation
+            entity.Property(e => e.CurrentLocation)
+                .HasColumnType("geography");
         });
 
         modelBuilder.Entity<Voucher>(entity =>

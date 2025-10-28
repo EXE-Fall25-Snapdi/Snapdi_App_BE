@@ -3,15 +3,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql.EntityFrameworkCore.PostgreSQL; // Added for UseNpgsql
 using Snapdi.Api.Services;
 using Snapdi.Repositories.Context;
 using Snapdi.Repositories.Interfaces;
-using Snapdi.Repositories.Models;
 using Snapdi.Repositories.Repositories;
 using Snapdi.Services.Interfaces;
+using Snapdi.Services.Interfaces.Snapdi.Services.Interfaces;
 using Snapdi.Services.Models;
 using Snapdi.Services.Services;
 using System.Text;
@@ -22,23 +21,35 @@ var builder = WebApplication.CreateBuilder(args);
 Env.Load();
 
 // Get configuration from environment variables
-var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? 
+var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING") ??
                       builder.Configuration.GetConnectionString("DefaultConnection");
 
-var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? 
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ??
             builder.Configuration["JWT:Key"];
 
-var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? 
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ??
                builder.Configuration["JWT:Issuer"];
 
-var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? 
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ??
                  builder.Configuration["JWT:Audience"];
 
-var jwtExpirationHours = Environment.GetEnvironmentVariable("JWT_EXPIRATION_HOURS") ?? 
+var jwtExpirationHours = Environment.GetEnvironmentVariable("JWT_EXPIRATION_HOURS") ??
                        builder.Configuration["JWT:ExpirationHours"];
 
-var appBaseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL") ?? 
+var appBaseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL") ??
                 builder.Configuration["App:BaseUrl"];
+
+var cloudinaryCloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME") ??
+                         builder.Configuration["Cloudinary:CloudName"];
+
+var cloudinaryApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY") ??
+                      builder.Configuration["Cloudinary:ApiKey"];
+
+var cloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET") ??
+                         builder.Configuration["Cloudinary:ApiSecret"];
+
+var cloudinaryUploadPreset = Environment.GetEnvironmentVariable("CLOUDINARY_UPLOAD_PRESET") ??
+                            builder.Configuration["Cloudinary:UploadPreset"] ?? "snapdi_default";
 
 // Validate required configuration
 if (string.IsNullOrEmpty(jwtKey))
@@ -51,6 +62,7 @@ if (jwtKey.Length < 32)
     throw new InvalidOperationException("JWT_KEY must be at least 32 characters long for security.");
 }
 
+// Add CORS services with SignalR support
 // Add CORS services
 builder.Services.AddCors(options =>
 {
@@ -139,9 +151,19 @@ builder.Services.Configure<EmailSettings>(options =>
 builder.Services.Configure<JwtSettings>(options =>
 {
     options.Key = jwtKey;
-    options.Issuer = jwtIssuer;
-    options.Audience = jwtAudience;
+    options.Issuer = jwtIssuer ?? "";
+    options.Audience = jwtAudience ?? "";
     options.ExpirationHours = int.Parse(jwtExpirationHours ?? "1");
+});
+
+builder.Services.Configure<CloudinarySettings>(options =>
+{
+    options.CloudName = cloudinaryCloudName ?? "";
+    options.ApiKey = cloudinaryApiKey ?? "";
+    options.ApiSecret = cloudinaryApiSecret ?? "";
+    options.UploadPreset = cloudinaryUploadPreset;
+    options.FolderPath = "snapdi";
+    options.UseSignedUpload = true;
 });
 
 // Register repositories
@@ -150,6 +172,18 @@ builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 builder.Services.AddScoped<IKeywordRepository, KeywordRepository>();
 builder.Services.AddScoped<IPhotographerProfileRepository, PhotographerProfileRepository>();
 builder.Services.AddScoped<IPhotoPortfolioRepository, PhotoPortfolioRepository>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IConversationRepository, ConversationRepository>();
+builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
+builder.Services.AddScoped<IVoucherUsageRepository, VoucherUsageRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IBookingStatusRepository, BookingStatusRepository>();
+builder.Services.AddScoped<IStyleRepository, StyleRepository>();
+builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleRepository>();
+builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();
+builder.Services.AddScoped<IPhotographerPhotoTypeRepository, PhotographerPhotoTypeRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -158,22 +192,38 @@ builder.Services.AddScoped<IBlogService, BlogService>();
 builder.Services.AddScoped<IKeywordService, KeywordService>();
 builder.Services.AddScoped<IPhotoPortfolioService, PhotoPortfolioService>();
 builder.Services.AddSingleton<IVerificationCodeService, VerificationCodeService>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
+builder.Services.AddScoped<IVoucherUsageService, VoucherUsageService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+builder.Services.AddScoped<IStyleService, StyleService>();
+builder.Services.AddScoped<IPhotographerStyleService, PhotographerStyleService>();
+builder.Services.AddScoped<IPhotoTypeService, PhotoTypeService>();
+builder.Services.AddScoped<IPhotographerPhotoTypeService, PhotographerPhotoTypeService>();
+builder.Services.AddScoped<IPaymentsService, PaymentService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
 
-// SignalR for realtime features
-builder.Services.AddSignalR();
+// SignalR for realtime features with extended options
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
 
 // Configure Swagger/OpenAPI with JWT authentication
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Snapdi API", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Snapdi API",
         Version = "v1",
-        Description = "API for Snapdi Photography Platform",
+        Description = "API for Snapdi Photography Platform with Real-time Booking Updates",
         Contact = new OpenApiContact
         {
             Name = "Snapdi Team",
@@ -237,7 +287,7 @@ app.UseSwaggerUI(c =>
 
 app.UseHttpsRedirection();
 
-// Enable CORS
+// Enable CORS (must be before Authentication and Authorization)
 app.UseCors("AllowFlutterApp");
 
 app.UseAuthentication();
@@ -247,5 +297,6 @@ app.MapControllers();
 
 // Map SignalR hubs
 app.MapHub<Snapdi.Api.Hubs.ChatHub>("/hubs/chat");
+app.MapHub<Snapdi.Api.Hubs.BookingHub>("/hubs/booking");
 
 app.Run();
