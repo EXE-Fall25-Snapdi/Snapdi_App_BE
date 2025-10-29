@@ -63,8 +63,8 @@ public partial class SnapdiDbV2Context : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            // Enable NetTopologySuite for spatial data support
-            optionsBuilder.UseSqlServer(o => o.UseNetTopologySuite());
+            // Enable NetTopologySuite for spatial data support with PostgreSQL
+            optionsBuilder.UseNpgsql(o => o.UseNetTopologySuite());
         }
     }
 

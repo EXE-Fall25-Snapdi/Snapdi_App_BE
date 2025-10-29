@@ -1,0 +1,77 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. It follows the same syntax as .gitignore, with the addition of
+# "#!include" directives (which insert the entries of the given .gitignore-style
+# file at that point).
+
+#!include:.gitignore
+
+# Ignore .git directory
+.git
+.gitignore
+.gitattributes
+
+# Ignore Visual Studio and .NET build artifacts
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+
+# Ignore development files
+.env
+.env.local
+.env.development
+*.development.*
+
+# Ignore documentation and markdown files (optional - remove if you want to include them)
+*.md
+!README.md
+
+# Ignore migration scripts (already applied)
+Migrations/
+
+# Ignore test files
+**/test/
+**/tests/
+**/*.Test/
+**/*.Tests/
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore Mac-specific files
+.DS_Store
+
+# Ignore Windows-specific files
+Thumbs.db
+Desktop.ini
+
+# Ignore package files
+*.nupkg
+*.snupkg
+packages/
+
+# Ignore Docker files (we use Dockerfile for deployment)
+docker-compose.yml
+.dockerignore
+
+# Ignore deployment scripts and guides
+deploy-*.ps1
+deploy-*.sh
+*.yaml
+!cloudbuild.yaml
+
+# Ignore database scripts (already run on Supabase)
+Scripts/
+Db/
+
+# Ignore local configuration
+appsettings.Development.json
+launchSettings.json
+
