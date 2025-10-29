@@ -19,10 +19,10 @@ param(
     [string]$ServiceName = "snapdi-api",
     
     [Parameter(Mandatory=$false)]
-    [string]$Memory = "512Mi",
+    [string]$Memory = "16Gi",
     
     [Parameter(Mandatory=$false)]
-    [int]$MaxInstances = 10
+    [int]$MaxInstances = 2
 )
 
 # Color output functions
@@ -205,7 +205,7 @@ $deployArgs = @(
     "--allow-unauthenticated",
     "--port=8080",
     "--memory=$Memory",
-    "--cpu=1",
+    "--cpu=8",
     "--min-instances=0",
     "--max-instances=$MaxInstances",
     "--timeout=300",
