@@ -38,7 +38,7 @@ function Write-ColorOutput($ForegroundColor) {
 function Write-Success { Write-ColorOutput Green @args }
 function Write-Info { Write-ColorOutput Cyan @args }
 function Write-Warning { Write-ColorOutput Yellow @args }
-function Write-Error { Write-ColorOutput Red @args }
+function Write-ErrorMsg { Write-ColorOutput Red @args }
 
 Write-Info "============================================="
 Write-Info "   Snapdi API - Cloud Run Deployment"
@@ -48,9 +48,9 @@ Write-Host ""
 # Check if gcloud is installed
 try {
     $gcloudVersion = gcloud version 2>&1 | Select-String "Google Cloud SDK"
-    Write-Success "✓ Google Cloud SDK is installed"
+    Write-Success "[OK] Google Cloud SDK is installed"
 } catch {
-    Write-Error "✗ Google Cloud SDK is not installed!"
+    Write-ErrorMsg "[ERROR] Google Cloud SDK is not installed!"
     Write-Info "Please install from: https://cloud.google.com/sdk/docs/install"
     exit 1
 }
@@ -76,10 +76,10 @@ Write-Host ""
 Write-Info "Setting GCP project..."
 gcloud config set project $ProjectId
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to set project. Please check your project ID."
+    Write-ErrorMsg "Failed to set project. Please check your project ID."
     exit 1
 }
-Write-Success "✓ Project set successfully"
+Write-Success "[OK] Project set successfully"
 Write-Host ""
 
 # Enable required APIs
@@ -94,7 +94,7 @@ foreach ($api in $apis) {
     Write-Info "  Enabling $api..."
     gcloud services enable $api --quiet
     if ($LASTEXITCODE -eq 0) {
-        Write-Success "  ✓ $api enabled"
+        Write-Success "  [OK] $api enabled"
     }
 }
 Write-Host ""
@@ -111,10 +111,10 @@ if ($LASTEXITCODE -ne 0) {
         --description="Snapdi API Docker images" `
         --quiet
     if ($LASTEXITCODE -eq 0) {
-        Write-Success "✓ Repository created successfully"
+        Write-Success "[OK] Repository created successfully"
     }
 } else {
-    Write-Success "✓ Repository already exists"
+    Write-Success "[OK] Repository already exists"
 }
 Write-Host ""
 
@@ -127,31 +127,31 @@ Write-Info "Image path: $fullImagePath"
 Write-Host ""
 
 # Change to Snapdi directory
-$snapdiPath = Join-Path $PSScriptRoot "Snapdi_App_BE\Snapdi"
+$snapdiPath = Join-Path $PSScriptRoot "Snapdi"
 if (-not (Test-Path $snapdiPath)) {
-    Write-Error "Snapdi directory not found at: $snapdiPath"
+    Write-ErrorMsg "Snapdi directory not found at: $snapdiPath"
     exit 1
 }
 
 Set-Location $snapdiPath
-Write-Success "✓ Changed to Snapdi directory"
+Write-Success "[OK] Changed to Snapdi directory"
 Write-Host ""
 
 # Build Docker image
 Write-Info "Building Docker image..."
 Write-Info "This may take several minutes..."
-docker build -t $fullImagePath .
+docker build --no-cache -t $fullImagePath .
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "✗ Docker build failed!"
+    Write-ErrorMsg "[ERROR] Docker build failed!"
     exit 1
 }
-Write-Success "✓ Docker image built successfully"
+Write-Success "[OK] Docker image built successfully"
 Write-Host ""
 
 # Configure Docker for Artifact Registry
 Write-Info "Configuring Docker authentication for Artifact Registry..."
 gcloud auth configure-docker "$Region-docker.pkg.dev" --quiet
-Write-Success "✓ Docker authentication configured"
+Write-Success "[OK] Docker authentication configured"
 Write-Host ""
 
 # Push image to Artifact Registry
@@ -159,10 +159,10 @@ Write-Info "Pushing Docker image to Artifact Registry..."
 Write-Info "This may take several minutes..."
 docker push $fullImagePath
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "✗ Failed to push Docker image!"
+    Write-ErrorMsg "[ERROR] Failed to push Docker image!"
     exit 1
 }
-Write-Success "✓ Docker image pushed successfully"
+Write-Success "[OK] Docker image pushed successfully"
 Write-Host ""
 
 # Load environment variables from .env file
@@ -182,7 +182,7 @@ if (Test-Path $envFile) {
             }
         }
     }
-    Write-Success "✓ Loaded $($envVars.Count) environment variables"
+    Write-Success "[OK] Loaded $($envVars.Count) environment variables"
 } else {
     Write-Warning "No .env file found at: $envFile"
     Write-Info "Environment variables will need to be set manually."
@@ -220,7 +220,7 @@ if ($envVars.Count -gt 0) {
 
 gcloud @deployArgs
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "✗ Cloud Run deployment failed!"
+    Write-ErrorMsg "[ERROR] Cloud Run deployment failed!"
     exit 1
 }
 
@@ -248,5 +248,4 @@ Write-Info "3. Configure custom domain (optional)"
 Write-Info "4. Set up monitoring and alerts"
 Write-Host ""
 
-Write-Success "Deployment complete! 🎉"
-
+Write-Success "Deployment complete!"

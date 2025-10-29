@@ -127,8 +127,12 @@ builder.Services.AddAuthentication(options =>
 //});
 builder.Services.AddDbContext<SnapdiDbV2Context>(options =>
     options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure()
+        connectionString,
+        npgsqlOptions =>
+        {
+            npgsqlOptions.EnableRetryOnFailure();
+            npgsqlOptions.UseNetTopologySuite();
+        }
     )
 );
 
