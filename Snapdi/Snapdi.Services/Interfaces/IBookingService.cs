@@ -84,5 +84,15 @@ namespace Snapdi.Services.Interfaces
         /// Get pending bookings for a photographer with pagination
         /// </summary>
         Task<PhotographerPendingBookingsResponseDto> GetPhotographerPendingBookingsAsync(int photographerId, int page = 1, int pageSize = 10);
+
+        /// <summary>
+        /// Get bookings by status for a user (as customer or photographer) with pagination
+        /// </summary>
+        Task<PhotographerPendingBookingsResponseDto> GetUserBookingsByStatusAsync(int userId, int statusId, int page = 1, int pageSize = 10);
+
+        /// <summary>
+        /// Get bookings by multiple statuses for a user (as customer or photographer) with pagination
+        /// </summary>
+        Task<PhotographerPendingBookingsResponseDto> GetUserBookingsByMultipleStatusesAsync(int userId, List<int> statusIds, int page = 1, int pageSize = 10);
     }
 }

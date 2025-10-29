@@ -76,7 +76,7 @@ namespace Snapdi.Services.DTOs
  /// <summary>
         /// Booking ID
         /// </summary>
-      public int BookingId { get; set; }
+   public int BookingId { get; set; }
 
         /// <summary>
         /// Customer information (basic with contact details)
@@ -84,13 +84,13 @@ namespace Snapdi.Services.DTOs
   public PendingBookingUserDto? User { get; set; }
 
         /// <summary>
-      /// Photographer information (extended with profile data)
+    /// Photographer information (extended with profile data)
         /// </summary>
-       public PendingBookingPhotographerDto? Photographer { get; set; }
+     public PendingBookingPhotographerDto? Photographer { get; set; }
 
         /// <summary>
   /// Scheduled date and time for the booking
-      /// </summary>
+   /// </summary>
         public DateTime ScheduleAt { get; set; }
 
  /// <summary>
@@ -100,16 +100,16 @@ namespace Snapdi.Services.DTOs
 
         /// <summary>
   /// Total price for the booking
-        /// </summary>
+ /// </summary>
      public double Price { get; set; }
 
   /// <summary>
         /// Current booking status
-        /// </summary>
+    /// </summary>
   public PendingBookingStatusDto? Status { get; set; }
 
-        /// <summary>
-      /// Duration of the booking in minutes
+      /// <summary>
+ /// Duration of the booking in minutes
    /// </summary>
    public int? Duration { get; set; }
 
@@ -122,6 +122,11 @@ namespace Snapdi.Services.DTOs
       /// Additional notes
         /// </summary>
     public string? Note { get; set; }
+
+        /// <summary>
+  /// Photo link/URL for the completed booking
+        /// </summary>
+      public string? PhotoLink { get; set; }
     }
 
     /// <summary>

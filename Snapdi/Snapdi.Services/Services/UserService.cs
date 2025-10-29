@@ -588,6 +588,39 @@ namespace Snapdi.Services.Services
             }
         }
 
+        public async Task<bool> UpdatePhotographerProfileAsync(int userId, UpdatePhotographerInfoDto updateDto)
+        {
+            try
+            {
+                // Verify photographer profile exists
+                var photographerProfile = await _photographerProfileRepository.GetByUserIdAsync(userId);
+                if (photographerProfile == null)
+                {
+                    return false;
+                }
+
+                // Update Description if provided
+                if (updateDto.Description != null)
+                {
+                    photographerProfile.Description = updateDto.Description;
+                }
+
+                // Update WorkLocation if provided
+                if (updateDto.WorkLocation != null)
+                {
+                    photographerProfile.WorkLocation = updateDto.WorkLocation;
+                }
+
+                await _photographerProfileRepository.UpdateAsync(photographerProfile);
+                await _photographerProfileRepository.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public async Task<IEnumerable<PhotoPortfolioDto>> GetPhotoPortfoliosByUserIdAsync(int userId)
         {
             // Verify user exists

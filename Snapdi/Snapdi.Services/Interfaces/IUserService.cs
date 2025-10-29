@@ -65,6 +65,9 @@ namespace Snapdi.Services.Interfaces
         // Update photographer availability status and location
         Task<bool> UpdatePhotographerStatusAsync(int userId, bool isAvailable, LocationCoordinatesDto? currentLocation = null);
         
+        // Update photographer profile info (Description and WorkLocation)
+        Task<bool> UpdatePhotographerProfileAsync(int userId, UpdatePhotographerInfoDto updateDto);
+        
         // Photo portfolio method
         Task<IEnumerable<PhotoPortfolioDto>> GetPhotoPortfoliosByUserIdAsync(int userId);
     }

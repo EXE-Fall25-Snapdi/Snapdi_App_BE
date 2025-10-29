@@ -21,10 +21,11 @@ namespace Snapdi.Api.Controllers
 
         /// <summary>
         /// Get current user profile (from JWT token)
+        /// Returns UserWithPhotographerDto if user is a photographer, otherwise returns UserDto
         /// </summary>
         [HttpGet("profile")]
         [Authorize] // Any authenticated user can get their own profile
-        public async Task<ActionResult<UserDto>> GetCurrentUserProfile()
+        public async Task<ActionResult> GetCurrentUserProfile()
         {
             try
             {
@@ -35,12 +36,24 @@ namespace Snapdi.Api.Controllers
                     return BadRequest(new { error = "Invalid token", message = "User ID not found in token claims" });
                 }
 
+                // First get basic user info to check role
                 var user = await _userService.GetUserByIdAsync(userId);
                 if (user == null)
                 {   
                     return NotFound(new { error = "User not found", message = $"User with ID {userId} does not exist" });
                 }
 
+                // If user is a photographer (roleId == 3), return with photographer profile
+                if (user.RoleId == 3)
+                {
+                    var photographerUser = await _userService.GetUserWithPhotographerProfileAsync(userId);
+                    if (photographerUser != null)
+                    {
+                        return Ok(photographerUser);
+                    }
+                }
+
+                // Otherwise return basic user info
                 return Ok(user);
             }
             catch (Exception ex)

@@ -25,6 +25,11 @@ namespace Snapdi.Repositories.Interfaces
         Task<IEnumerable<Booking>> GetBookingsByPhotographerAsync(int photographerId);
 
         /// <summary>
+        /// Get bookings for a user (as customer or photographer) with full details loaded
+        /// </summary>
+        Task<IEnumerable<Booking>> GetBookingsByUserIdAsync(int userId);
+
+        /// <summary>
         /// Get bookings by status ID
         /// </summary>
         Task<IEnumerable<Booking>> GetBookingsByStatusAsync(int statusId);
