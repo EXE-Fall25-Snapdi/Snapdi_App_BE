@@ -64,7 +64,7 @@ namespace Snapdi.Api.Controllers
                 // Use GetAllBookingsAsync and filter by ID, or add a new method
                 var bookings = await _bookingService.GetAllBookingsAsync();
                 var booking = bookings.FirstOrDefault(b => b.BookingId == id);
-                
+
                 if (booking == null)
                 {
                     return NotFound(new { error = "Booking not found", message = $"Booking with ID {id} does not exist" });
@@ -331,7 +331,7 @@ namespace Snapdi.Api.Controllers
                 // Get existing booking to check authorization
                 var bookings = await _bookingService.GetAllBookingsAsync();
                 var existingBooking = bookings.FirstOrDefault(b => b.BookingId == id);
-                
+
                 if (existingBooking == null)
                 {
                     return NotFound(new { error = "Booking not found", message = $"Booking with ID {id} does not exist" });
@@ -388,7 +388,7 @@ namespace Snapdi.Api.Controllers
 
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                if(string.IsNullOrEmpty(userId))
+                if (string.IsNullOrEmpty(userId))
                 {
                     return Unauthorized(new { error = "Unauthorized", message = "User identity not found" });
                 }
@@ -407,7 +407,7 @@ namespace Snapdi.Api.Controllers
 
                 return Ok(updatePhotoLink);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return StatusCode(500, new
                 {
@@ -449,7 +449,7 @@ namespace Snapdi.Api.Controllers
                 // Get existing booking to check authorization
                 var bookings = await _bookingService.GetAllBookingsAsync();
                 var existingBooking = bookings.FirstOrDefault(b => b.BookingId == id);
-                
+
                 if (existingBooking == null)
                 {
                     return NotFound(new { error = "Booking not found", message = $"Booking with ID {id} does not exist" });
@@ -623,57 +623,151 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
-      /// Get pending bookings for photographer (Photographer only)
+        /// Get pending bookings for photographer (Photographer only)
         /// </summary>
         /// <remarks>
-  /// Returns a paginated list of pending bookings for the specified photographer.
+        /// Returns a paginated list of pending bookings for the specified photographer.
         /// Response includes minimal user information, scheduling details, pricing, and photo type.
- /// </remarks>
+        /// </remarks>
         /// <param name="photographerId">ID of the photographer</param>
         /// <param name="page">Page number (default: 1)</param>
         /// <param name="pageSize">Number of items per page (default: 10, max: 100)</param>
-     [HttpGet("photographer/{photographerId}/pending")]
-      [Authorize]
+        [HttpGet("photographer/{photographerId}/pending")]
+        [Authorize]
         public async Task<ActionResult<PhotographerPendingBookingsResponseDto>> GetPhotographerPendingBookings(
-            int photographerId,
-[FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+     int photographerId,
+   [FromQuery] int page = 1,
+             [FromQuery] int pageSize = 10)
         {
-         try
-{
-    if (photographerId <= 0)
-    {
-           return BadRequest(new
-     {
-          error = "Invalid photographer ID",
-       message = "Photographer ID must be a positive number"
-       });
-    }
+            try
+            {
+                if (photographerId <= 0)
+                {
+                    return BadRequest(new
+                    {
+                        error = "Invalid photographer ID",
+                        message = "Photographer ID must be a positive number"
+                    });
+                }
 
-              // Check authorization - photographer can only view their own pending bookings
-           var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-    var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                // Check authorization - photographer can only view their own pending bookings
+                var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-           if (currentUserIdClaim != null && int.TryParse(currentUserIdClaim.Value, out int currentUserId))
-    {
-   if (currentUserRole != "ADMIN" && currentUserId != photographerId)
-              {
-        return Forbid();
-}
-   }
+                if (currentUserIdClaim != null && int.TryParse(currentUserIdClaim.Value, out int currentUserId))
+                {
+                    if (currentUserRole != "ADMIN" && currentUserId != photographerId)
+                    {
+                        return Forbid();
+                    }
+                }
 
-var result = await _bookingService.GetPhotographerPendingBookingsAsync(photographerId, page, pageSize);
-   return Ok(result);
+                var result = await _bookingService.GetPhotographerPendingBookingsAsync(photographerId, page, pageSize);
+                return Ok(result);
             }
-        catch (Exception ex)
-   {
-      return StatusCode(500, new
-       {
-    error = "Internal server error",
-       message = "An error occurred while retrieving pending bookings",
-  details = ex.Message
-     });
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while retrieving pending bookings",
+                    details = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get current user's bookings filtered by status
+        /// </summary>
+        [HttpGet("me/status/{statusId}")]
+        [Authorize]
+        public async Task<ActionResult<PhotographerPendingBookingsResponseDto>> GetMyBookingsByStatus(
+     int statusId,
+      [FromQuery] int page = 1,
+     [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                if (statusId <= 0)
+                {
+                    return BadRequest(new { error = "Invalid status ID", message = "Status ID must be a positive number" });
+                }
+
+                var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrWhiteSpace(userIdValue) || !int.TryParse(userIdValue, out var userId))
+                {
+                    return Unauthorized(new { error = "Unauthorized", message = "Invalid user identity" });
+                }
+
+                var result = await _bookingService.GetUserBookingsByStatusAsync(userId, statusId, page, pageSize);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while retrieving bookings by status",
+                    details = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get current user's bookings filtered by multiple statuses
+        /// </summary>
+        [HttpPost("me/statuses")]
+        [Authorize]
+        public async Task<ActionResult<PhotographerPendingBookingsResponseDto>> GetMyBookingsByMultipleStatuses(
+            [FromBody] GetBookingsByMultipleStatusesDto request)
+        {
+            try
+            {
+                if (request == null || request.StatusIds == null || request.StatusIds.Count == 0)
+                {
+                    return BadRequest(new
+                    {
+                        error = "Invalid request",
+                        message = "At least one status ID must be provided"
+                    });
+                }
+
+                if (request.StatusIds.Any(id => id <= 0))
+                {
+                    return BadRequest(new
+                    {
+                        error = "Invalid status IDs",
+                        message = "All status IDs must be positive numbers"
+                    });
+                }
+
+                var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrWhiteSpace(userIdValue) || !int.TryParse(userIdValue, out var userId))
+                {
+                    return Unauthorized(new { error = "Unauthorized", message = "Invalid user identity" });
+                }
+
+                var page = Math.Max(1, request.Page ?? 1);
+                var pageSize = Math.Clamp(request.PageSize ?? 10, 1, 100);
+
+                var result = await _bookingService.GetUserBookingsByMultipleStatusesAsync(
+      userId,
+                  request.StatusIds,
+              page,
+             pageSize);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while retrieving bookings by multiple statuses",
+                    details = ex.Message
+                });
+            }
+        }
     }
-   }
- }
 }

@@ -51,6 +51,20 @@ namespace Snapdi.Repositories.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Booking>> GetBookingsByUserIdAsync(int userId)
+        {
+            return await _context.Bookings
+                .Include(b => b.Customer)
+                .Include(b => b.Photographer)
+                    .ThenInclude(p => p!.PhotographerProfile)
+                        .ThenInclude(pp => pp!.PhotographerPhotoTypes)
+                    .ThenInclude(ppt => ppt.PhotoType)
+                .Include(b => b.Status)
+                .Where(b => b.CustomerId == userId || b.PhotographerId == userId)
+                .OrderByDescending(b => b.ScheduleAt)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<Booking>> GetBookingsForUserAsync(int userId)
         {
             return await _dbSet

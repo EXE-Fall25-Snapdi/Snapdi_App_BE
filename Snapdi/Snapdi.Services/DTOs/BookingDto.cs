@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace Snapdi.Services.DTOs
 {
@@ -347,6 +348,30 @@ namespace Snapdi.Services.DTOs
         public string StatusName { get; set; } = string.Empty;
         public int Count { get; set; }
         public double Percentage { get; set; }
+    }
+
+    /// <summary>
+    /// DTO for getting bookings by multiple statuses
+    /// </summary>
+    public class GetBookingsByMultipleStatusesDto
+    {
+        /// <summary>
+        /// List of status IDs to filter by
+        /// </summary>
+        [Required(ErrorMessage = "Status IDs are required")]
+        public List<int> StatusIds { get; set; } = new();
+
+        /// <summary>
+        /// Page number (default: 1)
+        /// </summary>
+        [Range(1, int.MaxValue, ErrorMessage = "Page must be greater than 0")]
+        public int? Page { get; set; } = 1;
+
+        /// <summary>
+        /// Number of items per page (default: 10, max: 100)
+        /// </summary>
+        [Range(1, 100, ErrorMessage = "Page size must be between 1 and 100")]
+        public int? PageSize { get; set; } = 10;
     }
 
     /// <summary>
