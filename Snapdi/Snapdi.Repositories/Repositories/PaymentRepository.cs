@@ -321,14 +321,14 @@ namespace Snapdi.Repositories.Repositories
         /// <summary>
         /// Get all payments for a specific booking
         /// </summary>
-        public async Task<IEnumerable<Payment>> GetPaymentsByBookingIdAsync(int bookingId)
+        public async Task<Payment?> GetPaymentsByBookingIdAsync(int bookingId)
         {
             return await _context.Payments
                 .Include(p => p.PaymentStatus)
                 .Include(p => p.FeePolicy)
                 .Where(p => p.BookingId == bookingId)
                 .OrderByDescending(p => p.PaymentDate)
-                .ToListAsync();
+                .FirstOrDefaultAsync();
         }
 
         /// <summary>
@@ -396,7 +396,7 @@ namespace Snapdi.Repositories.Repositories
                 .Include(p => p.PaymentStatus)
                 .Include(p => p.Booking)
                 .Where(p => p.PaymentDate >= startDate && p.PaymentDate <= endDate)
-                .Where(p => p.PaymentStatus != null && 
+                .Where(p => p.PaymentStatus != null &&
                            (p.PaymentStatus.StatusName.ToLower() == "done" ||
                             p.PaymentStatus.StatusName.ToLower() == "paid" ||
                             p.PaymentStatus.StatusName.ToLower() == "completed" ||

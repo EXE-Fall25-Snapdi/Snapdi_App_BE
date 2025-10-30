@@ -32,4 +32,15 @@ namespace Snapdi.Services.Models
         public string FolderPath { get; set; } = "snapdi";
         public bool UseSignedUpload { get; set; } = true;
     }
+
+    public class PayOSSettings
+    {
+        public string payOSClientId { get; set; } = string.Empty;
+        public string payOSApiKey { get; set; } = string.Empty;
+        public string payOSChecksumKey { get; set; } = string.Empty;
+        public string payOSReturnUrl { get; set; } = string.Empty;
+
+        public string payOSCancelUrl { get; set; } = string.Empty;
+
+    }
 }

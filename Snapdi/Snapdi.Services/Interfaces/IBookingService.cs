@@ -94,5 +94,42 @@ namespace Snapdi.Services.Interfaces
         /// Get bookings by multiple statuses for a user (as customer or photographer) with pagination
         /// </summary>
         Task<PhotographerPendingBookingsResponseDto> GetUserBookingsByMultipleStatusesAsync(int userId, List<int> statusIds, int page = 1, int pageSize = 10);
+        #region Payment Methods
+
+        /// <summary>
+        /// Process PayOS payment callback for booking
+        /// </summary>
+        /// <param name="paymentResponse">Payment response from PayOS</param>
+        /// <returns>True if processed successfully</returns>
+        Task<bool> ProcessPaymentCallbackAsync(PaymentResponseModel paymentResponse);
+
+        /// <summary>
+        /// Confirm manual payment for booking
+        /// </summary>
+        /// <param name="bookingId">Booking ID</param>
+        /// <param name="feePolicyId">Fee policy ID</param>
+        /// <param name="userId">User ID confirming the payment</param>
+        /// <returns>True if confirmed successfully</returns>
+        Task<bool> ConfirmManualPaymentAsync(int bookingId, int feePolicyId, int userId);
+
+        /// <summary>
+        /// Mark payment as paid for booking
+        /// </summary>
+        /// <param name="bookingId">Booking ID</param>
+        /// <param name="paymentId">Payment ID</param>
+        /// <param name="userId">User ID marking as paid</param>
+        /// <returns>True if marked successfully</returns>
+        Task<bool> MarkPaymentAsPaidAsync(int bookingId, int paymentId, int userId);
+
+        /// <summary>
+        /// Cancel payment and booking
+        /// </summary>
+        /// <param name="bookingId">Booking ID</param>
+        /// <param name="paymentId">Payment ID</param>
+        /// <param name="userId">User ID cancelling the payment</param>
+        /// <returns>True if cancelled successfully</returns>
+        Task<bool> CancelPaymentAsync(int bookingId, int paymentId, int userId);
+
+        #endregion
     }
 }

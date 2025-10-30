@@ -32,7 +32,7 @@ namespace Snapdi.Repositories.Interfaces
         /// <summary>
         /// Get payments with summary statistics for search criteria
         /// </summary>
-        Task<(double TotalAmount, double TotalFeeAmount, double TotalNetAmount, 
+        Task<(double TotalAmount, double TotalFeeAmount, double TotalNetAmount,
                int ConfirmedCount, int PaidCount, int PendingCount)> GetPaymentSummaryAsync(
             string? searchTerm = null,
             string? paymentStatus = null,
@@ -56,7 +56,7 @@ namespace Snapdi.Repositories.Interfaces
         /// <summary>
         /// Get all payments for a specific booking
         /// </summary>
-        Task<IEnumerable<Payment>> GetPaymentsByBookingIdAsync(int bookingId);
+        Task<Payment?> GetPaymentsByBookingIdAsync(int bookingId);
 
         /// <summary>
         /// Get payments by customer ID with paging
@@ -69,7 +69,7 @@ namespace Snapdi.Repositories.Interfaces
         /// </summary>
         Task<(IEnumerable<Payment> Payments, int TotalCount)> GetPaymentsByPhotographerIdAsync(
             int photographerId, int page, int pageSize);
-            
+
         /// <summary>
         /// Get all payments within a specific date range
         /// </summary>
