@@ -179,13 +179,13 @@ namespace Snapdi.Api.Controllers
                 }
 
                 // Find or create BookingStatus 'Confirmed'
-                var confirmedBookingStatus = await _db.BookingStatuses
-                    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "confirmed");
+                //var confirmedBookingStatus = await _db.BookingStatuses
+                //    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "confirmed");
 
-                if (confirmedBookingStatus == null)
-                {
-                    return NotFound(new { success = false, message = $"Booking Status {confirmedBookingStatus} not found" });
-                }
+                //if (confirmedBookingStatus == null)
+                //{
+                //    return NotFound(new { success = false, message = $"Booking Status {confirmedBookingStatus} not found" });
+                //}
 
                 var policy = await _db.FeePolicies.FindAsync(dto.FeePolicyId);
                 if (policy == null || !policy.IsActive || policy.ExpiryDate < DateTime.UtcNow)
@@ -215,8 +215,8 @@ namespace Snapdi.Api.Controllers
                 await _db.SaveChangesAsync();
 
                 // Update Booking status to Pending
-                booking.StatusId = (int)(confirmedBookingStatus.StatusId);
-                await _db.SaveChangesAsync();
+                //booking.StatusId = (int)(confirmedBookingStatus.StatusId);
+                //await _db.SaveChangesAsync();
 
                 _logger.LogInformation($"Payment created: {payment.PaymentId} for booking {dto.BookingId}");
 
@@ -716,14 +716,14 @@ namespace Snapdi.Api.Controllers
             try
             {
                 _logger.LogInformation("PayOS return callback received");
-                
+
                 var query = HttpContext.Request.Query;
                 var code = query["code"].ToString();
                 var id = query["id"].ToString();
                 var cancel = query["cancel"].ToString();
                 var status = query["status"].ToString();
                 var orderCode = query["orderCode"].ToString();
-                
+
                 _logger.LogInformation($"PayOS params: code={code}, id={id}, cancel={cancel}, status={status}, orderCode={orderCode}");
 
                 // ✅ Xác định trạng thái thanh toán: CHỈ code=00 và cancel!=true mới là paid
@@ -731,7 +731,7 @@ namespace Snapdi.Api.Controllers
                 if (code == "00" && cancel != "true")
                 {
                     paymentStatus = "paid";
-                    
+
                     // Verify và cập nhật payment status
                     if (!string.IsNullOrEmpty(orderCode) && long.TryParse(orderCode, out long orderCodeLong))
                     {
@@ -900,7 +900,7 @@ namespace Snapdi.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"Error in PaymentCallbackPayOS: {ex.Message}");
-                
+
                 // ✅ Error cũng trả về cancelled
                 var errorHtml = @"
 <!DOCTYPE html>
@@ -928,10 +928,10 @@ namespace Snapdi.Api.Controllers
     </div>
 </body>
 </html>";
-        
-        return Content(errorHtml, "text/html");
-    }
-}
+
+                return Content(errorHtml, "text/html");
+            }
+        }
         #endregion
     }
 }
