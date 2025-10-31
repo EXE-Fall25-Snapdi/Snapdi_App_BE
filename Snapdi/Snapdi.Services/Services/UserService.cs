@@ -442,6 +442,53 @@ namespace Snapdi.Services.Services
             return await SendVerificationCodeAsync(email);
         }
 
+        // Password reset methods
+        public async Task<bool> SendPasswordResetCodeAsync(string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                return false;
+
+            if (!user.IsActive)
+                return false;
+
+            // Check rate limiting
+            if (!_verificationCodeService.CanRequestNewCode(email))
+                return false; // Too many requests
+
+            // Generate password reset code
+            var resetCode = _verificationCodeService.GenerateCode(email);
+
+            // Send password reset code email
+            return await _emailService.SendPasswordResetCodeAsync(user.Email, user.Name, resetCode);
+        }
+
+        public async Task<bool> ResetPasswordWithCodeAsync(string email, string code, string newPassword)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                return false;
+
+            if (!user.IsActive)
+                return false;
+
+            // Verify the code
+            if (!_verificationCodeService.VerifyCode(email, code))
+                return false;
+
+            // Hash new password
+            var hashedPassword = HashPassword(newPassword);
+
+            // Update password
+            await _userRepository.UpdatePasswordAsync(user.UserId, hashedPassword);
+            await _userRepository.SaveChangesAsync();
+
+            // Remove the used code
+            _verificationCodeService.RemoveCode(email);
+
+            return true;
+        }
+
         public async Task<IEnumerable<UserWithPhotographerDto>> GetPhotographersPendingLevelAssignmentAsync()
         {
             var photographers = await _userRepository.GetPhotographersPendingLevelAssignmentAsync();

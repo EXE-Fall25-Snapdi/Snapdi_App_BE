@@ -34,7 +34,11 @@ namespace Snapdi.Services.Interfaces
         Task<bool> SendVerificationCodeAsync(string email);
         Task<bool> VerifyEmailWithCodeAsync(string email, string code);
         Task<bool> ResendVerificationCodeAsync(string email);
-        
+
+        // Password reset methods
+        Task<bool> SendPasswordResetCodeAsync(string email);
+        Task<bool> ResetPasswordWithCodeAsync(string email, string code, string newPassword);
+
         // User filtering method
         Task<PagedResultDto<UserDto>> GetUsersWithFilterAsync(UserFilterDto filterDto);
         

@@ -6,5 +6,6 @@ namespace Snapdi.Services.Interfaces
         Task<bool> SendPasswordResetAsync(string toEmail, string userName, string resetToken);
         Task<bool> SendWelcomeEmailAsync(string toEmail, string userName);
         Task<bool> SendVerificationCodeAsync(string toEmail, string userName, string verificationCode);
+        Task<bool> SendPasswordResetCodeAsync(string toEmail, string userName, string resetCode);
     }
 }
