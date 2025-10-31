@@ -61,7 +61,7 @@ namespace Snapdi.Services.Services
 
                 // Get required payment and booking statuses
                 var paymentStatus = await GetPaymentStatusByName(paymentResponse.Success ? "Paid" : "Failed");
-                var bookingStatus = await GetBookingStatusByName(paymentResponse.Success ? "Confirmed" : "Cancelled");
+                var bookingStatus = await GetBookingStatusByName(paymentResponse.Success ? "Paid" : "Cancelled");
 
                 if (paymentStatus == null || bookingStatus == null)
                 {
@@ -745,29 +745,29 @@ namespace Snapdi.Services.Services
 
             // Apply pagination
             var totalCount = filteredBookings.Count;
-  var totalPages = (int)Math.Ceiling((double)totalCount / currentPageSize);
+            var totalPages = (int)Math.Ceiling((double)totalCount / currentPageSize);
 
-       var paginatedBookings = filteredBookings
-      .Skip((currentPage - 1) * currentPageSize)
-   .Take(currentPageSize)
-    .ToList();
+            var paginatedBookings = filteredBookings
+           .Skip((currentPage - 1) * currentPageSize)
+        .Take(currentPageSize)
+         .ToList();
 
             // Map to pending booking response
-          var pendingBookingResponses = new List<PendingBookingResponseDto>();
+            var pendingBookingResponses = new List<PendingBookingResponseDto>();
 
-   foreach (var booking in paginatedBookings)
-      {
-       var pendingResponse = MapToPendingBookingResponseDto(booking);
-      pendingBookingResponses.Add(pendingResponse);
-          }
+            foreach (var booking in paginatedBookings)
+            {
+                var pendingResponse = MapToPendingBookingResponseDto(booking);
+                pendingBookingResponses.Add(pendingResponse);
+            }
 
             return new PhotographerPendingBookingsResponseDto
-   {
-         Data = pendingBookingResponses,
+            {
+                Data = pendingBookingResponses,
                 TotalCount = totalCount,
                 CurrentPage = currentPage,
-          PageSize = currentPageSize,
-       TotalPages = totalPages
+                PageSize = currentPageSize,
+                TotalPages = totalPages
             };
         }
 
