@@ -329,7 +329,18 @@ namespace Snapdi.Api.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                // Log the full exception including inner exception for debugging
+                var errorMessage = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    errorMessage += $" Inner Exception: {ex.InnerException.Message}";
+                    // Also include stack trace of inner exception if available
+                    if (ex.InnerException.StackTrace != null)
+                    {
+                        errorMessage += $" Stack Trace: {ex.InnerException.StackTrace}";
+                    }
+                }
+                return StatusCode(500, $"Internal server error: {errorMessage}");
             }
         }
 

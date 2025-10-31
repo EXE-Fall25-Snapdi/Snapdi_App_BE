@@ -142,7 +142,7 @@ namespace Snapdi.Services.Services
                 ThumbnailUrl = createBlogDto.ThumbnailUrl,
                 Content = createBlogDto.Content,
                 AuthorId = createBlogDto.AuthorId,
-                CreateAt = DateTime.Now,
+                CreateAt = DateTime.UtcNow,
                 IsActive = createBlogDto.IsActive
             };
 
@@ -179,41 +179,63 @@ namespace Snapdi.Services.Services
             var blog = await _blogRepository.GetBlogWithKeywordsAsync(blogId);
             if (blog == null) return null;
 
+            // Update blog properties
             blog.Title = updateBlogDto.Title;
             blog.ThumbnailUrl = updateBlogDto.ThumbnailUrl;
             blog.Content = updateBlogDto.Content;
             blog.IsActive = updateBlogDto.IsActive;
-            blog.UpdateAt = DateTime.Now;
+            // Note: UpdateAt will be set by BlogRepository.UpdateAsync()
 
-            await _blogRepository.UpdateAsync(blog);
-
-            // Update keywords if provided
-            if (updateBlogDto.KeywordNames.Any() || updateBlogDto.KeywordIds.Any())
+            // Update keywords if provided - work directly with tracked entity to avoid conflicts
+            if ((updateBlogDto.KeywordNames != null && updateBlogDto.KeywordNames.Any()) || 
+                (updateBlogDto.KeywordIds != null && updateBlogDto.KeywordIds.Any()))
             {
-                // Clear existing keywords
-                var existingKeywords = blog.Keywords.ToList();
-                foreach (var keyword in existingKeywords)
+                // Clear existing keywords - work with tracked entity
+                if (blog.Keywords != null && blog.Keywords.Any())
                 {
-                    await _blogRepository.RemoveKeywordFromBlogAsync(blogId, keyword.KeywordId);
+                    blog.Keywords.Clear();
                 }
 
                 // Add new keywords by name
-                foreach (var keywordName in updateBlogDto.KeywordNames)
+                if (updateBlogDto.KeywordNames != null)
                 {
-                    var keyword = await _keywordRepository.GetOrCreateKeywordAsync(keywordName);
-                    await _blogRepository.AddKeywordToBlogAsync(blogId, keyword.KeywordId);
+                    foreach (var keywordName in updateBlogDto.KeywordNames)
+                    {
+                        if (!string.IsNullOrWhiteSpace(keywordName))
+                        {
+                            var keyword = await _keywordRepository.GetOrCreateKeywordAsync(keywordName);
+                            if (keyword != null && !blog.Keywords.Any(k => k.KeywordId == keyword.KeywordId))
+                            {
+                                blog.Keywords.Add(keyword);
+                            }
+                        }
+                    }
                 }
 
                 // Add new keywords by ID
-                foreach (var keywordId in updateBlogDto.KeywordIds)
+                if (updateBlogDto.KeywordIds != null)
                 {
-                    await _blogRepository.AddKeywordToBlogAsync(blogId, keywordId);
+                    foreach (var keywordId in updateBlogDto.KeywordIds)
+                    {
+                        if (keywordId > 0 && !blog.Keywords.Any(k => k.KeywordId == keywordId))
+                        {
+                            var keyword = await _keywordRepository.GetByIdAsync(keywordId);
+                            if (keyword != null)
+                            {
+                                blog.Keywords.Add(keyword);
+                            }
+                        }
+                    }
                 }
             }
 
+            // Mark blog as updated (UpdateAt will be set in repository)
+            await _blogRepository.UpdateAsync(blog);
+            
+            // Save all changes
             await _blogRepository.SaveChangesAsync();
 
-            // Reload blog with keywords
+            // Reload blog with keywords to ensure we have latest data
             var updatedBlog = await _blogRepository.GetBlogWithKeywordsAsync(blogId);
             return MapToDto(updatedBlog!);
         }

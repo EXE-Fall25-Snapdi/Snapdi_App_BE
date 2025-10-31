@@ -15,6 +15,10 @@ using Snapdi.Services.Models;
 using Snapdi.Services.Services;
 using System.Text;
 
+// Configure Npgsql to use UTC for DateTime values by default
+// This must be set before any DbContext is created
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", false);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Load .env file

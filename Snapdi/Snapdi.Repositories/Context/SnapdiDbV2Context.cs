@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Snapdi.Repositories.Models;
 
@@ -65,6 +68,48 @@ public partial class SnapdiDbV2Context : DbContext
         {
             // Enable NetTopologySuite for spatial data support with PostgreSQL
             optionsBuilder.UseNpgsql(o => o.UseNetTopologySuite());
+        }
+    }
+
+    public override int SaveChanges()
+    {
+        // Ensure all DateTime properties are UTC before saving
+        EnsureUtcDateTimeKind();
+        return base.SaveChanges();
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // Ensure all DateTime properties are UTC before saving
+        EnsureUtcDateTimeKind();
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void EnsureUtcDateTimeKind()
+    {
+        var entries = ChangeTracker.Entries()
+            .Where(e => e.State == Microsoft.EntityFrameworkCore.EntityState.Added ||
+                       e.State == Microsoft.EntityFrameworkCore.EntityState.Modified);
+
+        foreach (var entry in entries)
+        {
+            foreach (var property in entry.Properties)
+            {
+                if (property.Metadata.ClrType == typeof(DateTime))
+                {
+                    if (property.CurrentValue is DateTime dateTime && dateTime.Kind != DateTimeKind.Utc)
+                    {
+                        property.CurrentValue = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                    }
+                }
+                else if (property.Metadata.ClrType == typeof(DateTime?))
+                {
+                    if (property.CurrentValue is DateTime dt && dt.Kind != DateTimeKind.Utc)
+                    {
+                        property.CurrentValue = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                    }
+                }
+            }
         }
     }
 
