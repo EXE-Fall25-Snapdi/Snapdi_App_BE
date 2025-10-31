@@ -1,10 +1,7 @@
+using Microsoft.Extensions.Logging;
 using Snapdi.Repositories.Interfaces;
 using Snapdi.Repositories.Models;
 using Snapdi.Services.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Snapdi.Services.Services
 {
@@ -13,16 +10,333 @@ namespace Snapdi.Services.Services
         private readonly IBookingRepository _bookingRepo;
         private readonly IUserRepository _userRepo;
         private readonly IBookingStatusRepository _statusRepo;
+        private readonly IPaymentRepository _paymentRepo;
+        private readonly IPaymentStatusRepository _paymentStatusRepo;
+        private readonly ILogger<BookingService> _logger;
 
         public BookingService(
             IBookingRepository bookingRepo,
             IUserRepository userRepo,
-            IBookingStatusRepository statusRepo)
+            IBookingStatusRepository statusRepo,
+            IPaymentRepository paymentRepo,
+            IPaymentStatusRepository paymentStatusRepo,
+            ILogger<BookingService> logger)
         {
             _bookingRepo = bookingRepo;
             _userRepo = userRepo;
             _statusRepo = statusRepo;
+            _paymentRepo = paymentRepo;
+            _paymentStatusRepo = paymentStatusRepo;
+            _logger = logger;
         }
+
+        /// <summary>
+        /// Process PayOS payment callback for booking
+        /// </summary>
+        public async Task<bool> ProcessPaymentCallbackAsync(PaymentResponseModel paymentResponse)
+        {
+            try
+            {
+                if (!paymentResponse.Success || paymentResponse.BookingId <= 0)
+                {
+                    _logger.LogWarning("Invalid payment response received for booking");
+                    return false;
+                }
+
+                var booking = await _bookingRepo.GetBookingWithDetailsAsync(paymentResponse.BookingId);
+                if (booking == null)
+                {
+                    _logger.LogWarning("Booking not found for ID: {BookingId}", paymentResponse.BookingId);
+                    return false;
+                }
+
+                // Check if booking is in a valid state for payment processing
+                var validStatuses = new[] { "Pending", "Confirmed" };
+                if (booking.Status == null || !validStatuses.Contains(booking.Status.StatusName))
+                {
+                    _logger.LogWarning("Booking {BookingId} is not in valid status for payment. Current status: {Status}",
+                        paymentResponse.BookingId, booking.Status?.StatusName ?? "Unknown");
+                    return false;
+                }
+
+                // Get required payment and booking statuses
+                var paymentStatus = await GetPaymentStatusByName(paymentResponse.Success ? "Paid" : "Failed");
+                var bookingStatus = await GetBookingStatusByName(paymentResponse.Success ? "Confirmed" : "Cancelled");
+
+                if (paymentStatus == null || bookingStatus == null)
+                {
+                    _logger.LogError("Required payment or booking status not found");
+                    return false;
+                }
+
+                // Create or update payment record
+                await CreateOrUpdatePaymentRecord(booking, paymentResponse, paymentStatus);
+
+                // Update booking status based on payment result
+                if (paymentResponse.Success)
+                {
+                    // Payment successful - confirm booking
+                    booking.StatusId = bookingStatus.StatusId;
+                    await _bookingRepo.UpdateAsync(booking);
+                    await _bookingRepo.SaveChangesAsync();
+
+                    _logger.LogInformation("Booking {BookingId} confirmed after successful payment", booking.BookingId);
+                }
+                else
+                {
+                    // Payment failed - cancel booking
+                    booking.StatusId = bookingStatus.StatusId;
+                    await _bookingRepo.UpdateAsync(booking);
+                    await _bookingRepo.SaveChangesAsync();
+
+                    _logger.LogInformation("Booking {BookingId} cancelled due to payment failure", booking.BookingId);
+                }
+
+                _logger.LogInformation("Payment processed successfully for booking {BookingId} with status {PaymentStatus}",
+                    booking.BookingId, paymentResponse.Success ? "Success" : "Failed");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing payment callback for booking {BookingId}", paymentResponse.BookingId);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Confirm manual payment for booking
+        /// </summary>
+        public async Task<bool> ConfirmManualPaymentAsync(int bookingId, int feePolicyId, int userId)
+        {
+            try
+            {
+                var booking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
+                if (booking == null)
+                {
+                    _logger.LogWarning("Booking not found for ID: {BookingId}", bookingId);
+                    return false;
+                }
+
+                // Validate user has permission (customer or admin)
+                if (booking.CustomerId != userId)
+                {
+                    _logger.LogWarning("User {UserId} does not have permission to confirm payment for booking {BookingId}", userId, bookingId);
+                    return false;
+                }
+
+                // Get payment and booking statuses
+                var pendingPaymentStatus = await GetPaymentStatusByName("Pending");
+                var confirmedBookingStatus = await GetBookingStatusByName("Confirmed");
+
+                if (pendingPaymentStatus == null || confirmedBookingStatus == null)
+                {
+                    _logger.LogError("Required statuses not found for manual payment confirmation");
+                    return false;
+                }
+
+                // Calculate payment amounts (20% of booking price)
+                var amountCustomerPay = Math.Round(booking.Price * 20 / 100);
+
+                // Create payment record for manual payment
+                var payment = new Payment
+                {
+                    BookingId = bookingId,
+                    Amount = amountCustomerPay,
+                    PaymentStatusId = pendingPaymentStatus.PaymentStatusId,
+                    FeePolicyId = feePolicyId,
+                    PaymentDate = DateTime.UtcNow,
+                    TransactionMethod = "Manual"
+                };
+
+                await _paymentRepo.AddAsync(payment);
+                await _paymentRepo.SaveChangesAsync();
+
+                // Update booking status to confirmed
+                booking.StatusId = confirmedBookingStatus.StatusId;
+                await _bookingRepo.UpdateAsync(booking);
+                await _bookingRepo.SaveChangesAsync();
+
+                _logger.LogInformation("Manual payment confirmed for booking {BookingId} by user {UserId}", bookingId, userId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming manual payment for booking {BookingId}", bookingId);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Mark payment as paid for booking
+        /// </summary>
+        public async Task<bool> MarkPaymentAsPaidAsync(int bookingId, int paymentId, int userId)
+        {
+            try
+            {
+                var booking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
+                if (booking == null)
+                {
+                    _logger.LogWarning("Booking not found for ID: {BookingId}", bookingId);
+                    return false;
+                }
+
+                var payment = await _paymentRepo.GetByIdAsync(paymentId);
+                if (payment == null || payment.BookingId != bookingId)
+                {
+                    _logger.LogWarning("Payment {PaymentId} not found or does not belong to booking {BookingId}", paymentId, bookingId);
+                    return false;
+                }
+
+                // Get required statuses
+                var paidPaymentStatus = await GetPaymentStatusByName("Paid");
+                var confirmedBookingStatus = await GetBookingStatusByName("Confirmed");
+
+                if (paidPaymentStatus == null || confirmedBookingStatus == null)
+                {
+                    _logger.LogError("Required statuses not found for marking payment as paid");
+                    return false;
+                }
+
+                // Update payment status
+                payment.PaymentStatusId = paidPaymentStatus.PaymentStatusId;
+                await _paymentRepo.UpdateAsync(payment);
+                await _paymentRepo.SaveChangesAsync();
+
+                // Update booking status
+                booking.StatusId = confirmedBookingStatus.StatusId;
+                await _bookingRepo.UpdateAsync(booking);
+                await _bookingRepo.SaveChangesAsync();
+
+                _logger.LogInformation("Payment {PaymentId} marked as paid for booking {BookingId}", paymentId, bookingId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking payment as paid for booking {BookingId}", bookingId);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Cancel payment and booking
+        /// </summary>
+        public async Task<bool> CancelPaymentAsync(int bookingId, int paymentId, int userId)
+        {
+            try
+            {
+                var booking = await _bookingRepo.GetBookingWithDetailsAsync(bookingId);
+                if (booking == null)
+                {
+                    _logger.LogWarning("Booking not found for ID: {BookingId}", bookingId);
+                    return false;
+                }
+
+                var payment = await _paymentRepo.GetByIdAsync(paymentId);
+                if (payment == null || payment.BookingId != bookingId)
+                {
+                    _logger.LogWarning("Payment {PaymentId} not found or does not belong to booking {BookingId}", paymentId, bookingId);
+                    return false;
+                }
+
+                // Get required statuses
+                var refundedPaymentStatus = await GetPaymentStatusByName("Refunded");
+                var cancelledBookingStatus = await GetBookingStatusByName("Cancelled");
+
+                if (refundedPaymentStatus == null || cancelledBookingStatus == null)
+                {
+                    _logger.LogError("Required statuses not found for cancelling payment");
+                    return false;
+                }
+
+                // Update payment status to refunded
+                payment.PaymentStatusId = refundedPaymentStatus.PaymentStatusId;
+                await _paymentRepo.UpdateAsync(payment);
+                await _paymentRepo.SaveChangesAsync();
+
+                // Update booking status to cancelled
+                booking.StatusId = cancelledBookingStatus.StatusId;
+                await _bookingRepo.UpdateAsync(booking);
+                await _bookingRepo.SaveChangesAsync();
+
+                _logger.LogInformation("Payment {PaymentId} cancelled and booking {BookingId} cancelled", paymentId, bookingId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling payment for booking {BookingId}", bookingId);
+                return false;
+            }
+        }
+
+        #region Private Helper Methods
+
+        private async Task<PaymentStatus?> GetPaymentStatusByName(string statusName)
+        {
+            try
+            {
+                return await _paymentStatusRepo.GetByNameAsync(statusName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting payment status by name: {StatusName}", statusName);
+                return null;
+            }
+        }
+
+        private async Task<BookingStatus?> GetBookingStatusByName(string statusName)
+        {
+            try
+            {
+                return await _statusRepo.GetByNameAsync(statusName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting booking status by name: {StatusName}", statusName);
+                return null;
+            }
+        }
+
+        private async Task CreateOrUpdatePaymentRecord(Booking booking, PaymentResponseModel paymentResponse, PaymentStatus paymentStatus)
+        {
+            try
+            {
+                // Check if payment record already exists for this booking and order code
+                var existingPayments = await _paymentRepo.GetPaymentsByBookingIdAsync(booking.BookingId);
+
+                if (existingPayments != null)
+                {
+                    // Update existing payment
+                    existingPayments.PaymentStatusId = paymentStatus.PaymentStatusId;
+                    existingPayments.TransactionReference = paymentResponse.TransactionReference ?? paymentResponse.OrderCode.ToString();
+                    await _paymentRepo.UpdateAsync(existingPayments);
+                }
+                else
+                {
+                    // Create new payment record
+                    var payment = new Payment
+                    {
+                        BookingId = booking.BookingId,
+                        Amount = paymentResponse.Amount,
+                        PaymentStatusId = paymentStatus.PaymentStatusId,
+                        TransactionMethod = "PayOS",
+                        TransactionReference = paymentResponse.TransactionReference ?? paymentResponse.OrderCode.ToString(),
+                        PaymentDate = paymentResponse.PaymentDate
+                    };
+
+                    await _paymentRepo.AddAsync(payment);
+                }
+
+                await _paymentRepo.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating or updating payment record for booking {BookingId}", booking.BookingId);
+                throw;
+            }
+        }
+
+        #endregion
 
         public async Task<BookingResponse> CreateBookingAsync(CreateBookingRequest request)
         {

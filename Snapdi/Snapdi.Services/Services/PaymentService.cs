@@ -97,10 +97,10 @@ namespace Snapdi.Services.Services
         /// <summary>
         /// Get all payments for a specific booking
         /// </summary>
-        public async Task<IEnumerable<PaymentDto>> GetPaymentsByBookingIdAsync(int bookingId)
+        public async Task<PaymentDto?> GetPaymentsByBookingIdAsync(int bookingId)
         {
             var payments = await _paymentRepository.GetPaymentsByBookingIdAsync(bookingId);
-            return payments.Select(MapToPaymentDto);
+            return payments != null ? MapToPaymentDto(payments) : null;
         }
 
         /// <summary>

@@ -17,18 +17,30 @@ namespace Snapdi.Api.Controllers
         private readonly SnapdiDbV2Context _db;
         private readonly ILogger<PaymentsController> _logger;
         private readonly IPaymentsService _paymentService;
+        private readonly IPayOSService _payOSService;
+        private readonly IBookingService _bookingService;
+        private readonly IUserService _userService;
+
 
         public PaymentsController(
             ICloudinaryService cloudinaryService,
             SnapdiDbV2Context db,
             ILogger<PaymentsController> logger,
-            IPaymentsService paymentService)
+            IPaymentsService paymentService,
+            IPayOSService payOSService,
+            IBookingService bookingService,
+            IUserService userService)
         {
             _cloudinaryService = cloudinaryService;
             _db = db;
             _logger = logger;
             _paymentService = paymentService;
+            _payOSService = payOSService;
+            _bookingService = bookingService;
+            _userService = userService;
         }
+
+        #region Manual Payment Methods
 
         /// <summary>
         /// Accept multipart form: BookingId, Amount, TransactionReference, proofImage (file).
@@ -196,7 +208,7 @@ namespace Snapdi.Api.Controllers
                     PaymentStatusId = confirmedStatus.PaymentStatusId,
                     FeePolicyId = dto.FeePolicyId, // Fixed as per requirement
                     PaymentDate = DateTime.UtcNow,
-                    TransactionMethod = "Manual"
+                    TransactionMethod = "PayOS"
                 };
 
                 _db.Payments.Add(payment);
@@ -285,15 +297,15 @@ namespace Snapdi.Api.Controllers
 
         [Authorize]
         [HttpPut("cancel-manual-payment")]
-        public async Task<IActionResult> CancelManualPayment([FromBody] ManualPaymentRequestDto dto, int paymentId)
+        public async Task<IActionResult> CancelManualPayment([FromBody] ManualPaymentRequestDto dto)
         {
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(new { success = false, message = "Invalid request data" });
-                var payment = await _db.Payments.FindAsync(paymentId);
-                if (payment == null)
-                    return NotFound(new { success = false, message = $"Payment {paymentId} not found" });
+                //var payment = await _db.Payments.FindAsync(paymentId);
+                //if (payment == null)
+                //    return NotFound(new { success = false, message = $"Payment {paymentId} not found" });
                 // Validate booking exists
                 var booking = await _db.Bookings.FindAsync(dto.BookingId);
                 if (booking == null)
@@ -323,7 +335,7 @@ namespace Snapdi.Api.Controllers
                 }
 
                 //Update Payment status to Cancelled
-                payment.PaymentStatusId = paidStatus.PaymentStatusId;
+                //payment.PaymentStatusId = paidStatus.PaymentStatusId;
                 // Update Booking status to Cancelled
                 booking.StatusId = (int)(canceledBookingStatus.StatusId);
                 await _db.SaveChangesAsync();
@@ -338,7 +350,7 @@ namespace Snapdi.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error confirming manual payment: {ex.Message}");
+                _logger.LogError($"Error cancelling manual payment: {ex.Message}");
                 return StatusCode(500, new { success = false, message = "Internal server error" });
             }
         }
@@ -364,6 +376,174 @@ namespace Snapdi.Api.Controllers
                 paymentDate = payment.PaymentDate
             });
         }
+
+        #endregion
+
+        #region PayOS Integration Methods
+
+        /// <summary>
+        /// Create PayOS payment for a booking
+        /// </summary>
+        [HttpPost("payos/create-payment")]
+        [Authorize]
+        public async Task<ActionResult<object>> CreatePayOSPayment([FromBody] CreatePaymentRequest request)
+        {
+            try
+            {
+                await using var transaction = await _db.Database.BeginTransactionAsync();
+                if (!ModelState.IsValid)
+                {
+                    await transaction.RollbackAsync();
+                    return BadRequest(new
+                    {
+                        error = "Validation failed",
+                        message = "Please check your input data",
+                        details = ModelState.Where(x => x.Value.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                            )
+                    });
+                }
+
+                // Get current user
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    await transaction.RollbackAsync();
+                    return BadRequest(new { error = "Invalid token", message = "User ID not found in token claims" });
+                }
+
+                // Verify booking exists and user has access
+                var booking = await _bookingService.GetBookingByIdAsync(request.BookingId);
+                if (booking == null)
+                {
+                    await transaction.RollbackAsync();
+                    return NotFound(new { error = "Booking not found", message = $"Booking with ID {request.BookingId} does not exist" });
+                }
+
+                // Only customer can create payment for their booking
+                if (booking.Customer?.UserId != userId)
+                {
+                    await transaction.RollbackAsync();
+                    throw new Exception("You can only create payment for your own bookings");
+                }
+
+                var customer = await _userService.GetUserByIdAsync(userId);
+                if (customer == null)
+                {
+                    await transaction.RollbackAsync();
+                    return NotFound(new { error = "User not found", message = $"User with ID {userId} does not exist" });
+                }
+
+                // Set return and cancel URLs
+                var paymentInformation = new PaymentInformationModel
+                {
+                    BookingId = request.BookingId,
+                    Amount = (int)booking.Price * 0.2,
+                    CustomerName = customer.Name,
+                    Description = $"Payment for booking #{request.BookingId}"
+                };
+
+                // Create payment URL
+                var paymentUrl = await _payOSService.CreatePaymentUrl(
+                    paymentInformation,
+                    HttpContext
+                );
+
+                await transaction.CommitAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    paymentUrl,
+                    bookingId = request.BookingId,
+                    message = "Payment URL created successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error creating PayOS payment for booking {request.BookingId}");
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while creating payment",
+                    details = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Handle PayOS payment success callback
+        /// </summary>
+        [HttpGet("payos/payment-success")]
+        public async Task<ActionResult> PayOSPaymentSuccess([FromQuery] long orderCode, [FromQuery] string? status)
+        {
+            try
+            {
+                _logger.LogInformation($"PayOS payment success callback: OrderCode={orderCode}, Status={status}");
+
+                // Get payment info from PayOS
+                var paymentResult = await _payOSService.GetPaymentInfo(orderCode);
+
+                if (paymentResult.Success)
+                {
+                    // Here you can redirect to your frontend success page
+                    // or return a success view
+                    return Ok(new
+                    {
+                        success = true,
+                        orderCode,
+                        status = paymentResult.Status,
+                        amount = paymentResult.Amount,
+                        message = "Payment completed successfully"
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    success = false,
+                    orderCode,
+                    message = paymentResult.ErrorMessage ?? "Payment verification failed"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error handling PayOS payment success for order {orderCode}");
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while processing payment success"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Get payment information by order code (Admin only)
+        /// </summary>
+        [HttpGet("payos/payment-info/{orderCode}")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<PaymentResponseModel>> GetPayOSPaymentInfo(long orderCode)
+        {
+            try
+            {
+                var result = await _payOSService.GetPaymentInfo(orderCode);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting PayOS payment info for order {orderCode}");
+                return StatusCode(500, new
+                {
+                    error = "Internal server error",
+                    message = "An error occurred while retrieving payment information"
+                });
+            }
+        }
+
+        #endregion
+
+        #region Payment Search and Management
 
         /// <summary>
         /// Search payments with filtering and paging (Admin only)
@@ -483,52 +663,6 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
-        /// Get payments by booking ID (Customer and Photographer can access their own bookings)
-        /// </summary>
-        //[HttpGet("booking/{bookingId}")]
-        //[Authorize]
-        //public async Task<ActionResult<IEnumerable<PaymentDto>>> GetPaymentsByBookingId(int bookingId)
-        //{
-        //    try
-        //    {
-        //        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        //        var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-        //        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
-        //        {
-        //            return BadRequest(new { error = "Invalid token", message = "User ID not found in token claims" });
-        //        }
-
-        //        // Verify user has access to this booking (unless admin)
-        //        if (userRole != "ADMIN")
-        //        {
-        //            var booking = await _db.Bookings.FindAsync(bookingId);
-        //            if (booking == null)
-        //            {
-        //                return NotFound(new { error = "Booking not found", message = $"Booking with ID {bookingId} does not exist" });
-        //            }
-
-        //            if (booking.CustomerId != userId && booking.PhotographerId != userId)
-        //            {
-        //                throw new Exception("You can only access payments for your own bookings");
-        //            }
-        //        }
-
-        //        var payments = await _paymentService.GetPaymentsByBookingIdAsync(bookingId);
-        //        return Ok(payments);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, new
-        //        {
-        //            error = "Internal server error",
-        //            message = "An error occurred while retrieving booking payments",
-        //            details = ex.Message
-        //        });
-        //    }
-        //}
-
-        /// <summary>
         /// Get detailed payment information by ID (Admin, or users involved in the payment)
         /// </summary>
         [HttpGet("details/{id}")]
@@ -575,5 +709,75 @@ namespace Snapdi.Api.Controllers
                 });
             }
         }
+
+        [HttpGet("Checkout/PaymentCallbackPayOS")]
+        public async Task<IActionResult> PaymentCallbackPayOS()
+        {
+            try
+            {
+                // 1. Lấy toàn bộ query mà PayOS gửi về
+                var query = HttpContext.Request.Query;
+                var rawUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}?{Request.QueryString}";
+
+                // 2. Parse và xác minh thanh toán
+                var payOSResponse = await _payOSService.PaymentExecute(rawUrl);
+                if (payOSResponse == null)
+                    return Redirect(BuildFrontendUrl("failed", "invalid_response"));
+
+                // 3. Cập nhật Booking và Payment trong DB using BookingService
+                var callbackProcessed = await _bookingService.ProcessPaymentCallbackAsync(payOSResponse);
+                if (!callbackProcessed)
+                    return Redirect(BuildFrontendUrl("failed", "process_failed", payOSResponse.BookingId.ToString()));
+
+                // 4. Redirect sang FE tuỳ kết quả
+                if (payOSResponse.Success)
+                {
+                    return Redirect(BuildFrontendUrl(
+                        "success",
+                        "payment_success",
+                        payOSResponse.BookingId.ToString(),
+                        payOSResponse.OrderCode,
+                        "00"
+                    ));
+                }
+                else
+                {
+                    return Redirect(BuildFrontendUrl(
+                        "failed",
+                        "payment_failed",
+                        payOSResponse.BookingId.ToString(),
+                        payOSResponse.OrderCode,
+                        "01"
+                    ));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Redirect(BuildFrontendUrl("failed", Uri.EscapeDataString(ex.Message)));
+            }
+        }
+
+        private string BuildFrontendUrl(
+          string status,
+          string message,
+          string? bookingId = null,
+          double? transactionRef = null,
+          string? code = null)
+        {
+            // FE base URL: chỉ cần domain (không bao gồm /payment/result)
+            var feBaseUrl = "https://localhost:7000";
+            var url = $"{feBaseUrl}/payment/result?status={status}&message={message}";
+
+            if (!string.IsNullOrEmpty(bookingId))
+                url += $"&bookingId={bookingId}";
+            if (transactionRef.HasValue)
+                url += $"&txnRef={transactionRef}";
+            if (!string.IsNullOrEmpty(code))
+                url += $"&code={code}";
+
+            return url;
+        }
+
+        #endregion
     }
 }

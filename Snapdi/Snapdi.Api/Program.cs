@@ -55,6 +55,21 @@ var cloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SEC
 var cloudinaryUploadPreset = Environment.GetEnvironmentVariable("CLOUDINARY_UPLOAD_PRESET") ??
                             builder.Configuration["Cloudinary:UploadPreset"] ?? "snapdi_default";
 
+var payOSClientId = Environment.GetEnvironmentVariable("PAYOS_CLIENT_ID") ??
+                   builder.Configuration["PayOS:ClientId"];
+
+var payOSApiKey = Environment.GetEnvironmentVariable("PAYOS_API_KEY") ??
+                 builder.Configuration["PayOS:ApiKey"];
+
+var payOSChecksumKey = Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY") ??
+                      builder.Configuration["PayOS:ChecksumKey"];
+
+var payOSReturnUrl = Environment.GetEnvironmentVariable("PAYOS_RETURN_URL") ??
+                            builder.Configuration["PayOS:ReturnUrl"];
+
+var payOSCancelUrl = Environment.GetEnvironmentVariable("PAYOS_CANCEL_URL") ??
+                            builder.Configuration["PayOS:CancelUrl"];
+
 // Validate required configuration
 if (string.IsNullOrEmpty(jwtKey))
 {
@@ -174,6 +189,15 @@ builder.Services.Configure<CloudinarySettings>(options =>
     options.UseSignedUpload = true;
 });
 
+builder.Services.Configure<PayOSSettings>(options =>
+{
+    options.payOSClientId = payOSClientId ?? "";
+    options.payOSApiKey = payOSApiKey ?? "";
+    options.payOSChecksumKey = payOSChecksumKey ?? "";
+    options.payOSReturnUrl = payOSReturnUrl ?? "";
+    options.payOSCancelUrl = payOSCancelUrl ?? "";
+});
+
 // Register repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBlogRepository, BlogRepository>();
@@ -191,7 +215,7 @@ builder.Services.AddScoped<IPhotographerStyleRepository, PhotographerStyleReposi
 builder.Services.AddScoped<IPhotoTypeRepository, PhotoTypeRepository>();
 builder.Services.AddScoped<IPhotographerPhotoTypeRepository, PhotographerPhotoTypeRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPaymentStatusRepository, PaymentStatusRepository>();
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -210,10 +234,12 @@ builder.Services.AddScoped<IPhotographerStyleService, PhotographerStyleService>(
 builder.Services.AddScoped<IPhotoTypeService, PhotoTypeService>();
 builder.Services.AddScoped<IPhotographerPhotoTypeService, PhotographerPhotoTypeService>();
 builder.Services.AddScoped<IPaymentsService, PaymentService>();
+builder.Services.AddScoped<IPayOSService, PayOSService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
 // SignalR for realtime features with extended options
 builder.Services.AddSignalR(options =>

@@ -33,7 +33,7 @@ namespace Snapdi.Services.Interfaces
         /// </summary>
         /// <param name="bookingId">Booking ID</param>
         /// <returns>List of payments for the booking</returns>
-        Task<IEnumerable<PaymentDto>> GetPaymentsByBookingIdAsync(int bookingId);
+        Task<PaymentDto?> GetPaymentsByBookingIdAsync(int bookingId);
 
         /// <summary>
         /// Get payments by customer ID
