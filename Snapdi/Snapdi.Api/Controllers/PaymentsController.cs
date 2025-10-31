@@ -179,13 +179,13 @@ namespace Snapdi.Api.Controllers
                 }
 
                 // Find or create BookingStatus 'Confirmed'
-                var confirmedBookingStatus = await _db.BookingStatuses
-                    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "confirmed");
+                //var confirmedBookingStatus = await _db.BookingStatuses
+                //    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "confirmed");
 
-                if (confirmedBookingStatus == null)
-                {
-                    return NotFound(new { success = false, message = $"Booking Status {confirmedBookingStatus} not found" });
-                }
+                //if (confirmedBookingStatus == null)
+                //{
+                //    return NotFound(new { success = false, message = $"Booking Status {confirmedBookingStatus} not found" });
+                //}
 
                 var policy = await _db.FeePolicies.FindAsync(dto.FeePolicyId);
                 if (policy == null || !policy.IsActive || policy.ExpiryDate < DateTime.UtcNow)
@@ -215,8 +215,8 @@ namespace Snapdi.Api.Controllers
                 await _db.SaveChangesAsync();
 
                 // Update Booking status to Pending
-                booking.StatusId = (int)(confirmedBookingStatus.StatusId);
-                await _db.SaveChangesAsync();
+                //booking.StatusId = (int)(confirmedBookingStatus.StatusId);
+                //await _db.SaveChangesAsync();
 
                 _logger.LogInformation($"Payment created: {payment.PaymentId} for booking {dto.BookingId}");
 
@@ -267,7 +267,7 @@ namespace Snapdi.Api.Controllers
 
                 // Find or create BookingStatus 'Confirmed'
                 var completedBookingStatus = await _db.BookingStatuses
-                    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "confirmed");
+                    .FirstOrDefaultAsync(ps => ps.StatusName.ToLower() == "paid");
 
                 if (completedBookingStatus == null)
                 {
@@ -715,69 +715,223 @@ namespace Snapdi.Api.Controllers
         {
             try
             {
-                // 1. Lấy toàn bộ query mà PayOS gửi về
+                _logger.LogInformation("PayOS return callback received");
+
                 var query = HttpContext.Request.Query;
-                var rawUrl = $"{Request.Scheme}://{Request.Host}{Request.Path}?{Request.QueryString}";
+                var code = query["code"].ToString();
+                var id = query["id"].ToString();
+                var cancel = query["cancel"].ToString();
+                var status = query["status"].ToString();
+                var orderCode = query["orderCode"].ToString();
 
-                // 2. Parse và xác minh thanh toán
-                var payOSResponse = await _payOSService.PaymentExecute(rawUrl);
-                if (payOSResponse == null)
-                    return Redirect(BuildFrontendUrl("failed", "invalid_response"));
+                _logger.LogInformation($"PayOS params: code={code}, id={id}, cancel={cancel}, status={status}, orderCode={orderCode}");
 
-                // 3. Cập nhật Booking và Payment trong DB using BookingService
-                var callbackProcessed = await _bookingService.ProcessPaymentCallbackAsync(payOSResponse);
-                if (!callbackProcessed)
-                    return Redirect(BuildFrontendUrl("failed", "process_failed", payOSResponse.BookingId.ToString()));
-
-                // 4. Redirect sang FE tuỳ kết quả
-                if (payOSResponse.Success)
+                // ✅ Xác định trạng thái thanh toán: CHỈ code=00 và cancel!=true mới là paid
+                string paymentStatus;
+                if (code == "00" && cancel != "true")
                 {
-                    return Redirect(BuildFrontendUrl(
-                        "success",
-                        "payment_success",
-                        payOSResponse.BookingId.ToString(),
-                        payOSResponse.OrderCode,
-                        "00"
-                    ));
+                    paymentStatus = "paid";
+
+                    // Verify và cập nhật payment status
+                    if (!string.IsNullOrEmpty(orderCode) && long.TryParse(orderCode, out long orderCodeLong))
+                    {
+                        try
+                        {
+                            var paymentInfo = await _payOSService.GetPaymentInfo(orderCodeLong);
+                            if (paymentInfo != null)
+                            {
+                                await _bookingService.ProcessPaymentCallbackAsync(paymentInfo);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"Error processing payment callback: {ex.Message}");
+                        }
+                    }
                 }
                 else
                 {
-                    return Redirect(BuildFrontendUrl(
-                        "failed",
-                        "payment_failed",
-                        payOSResponse.BookingId.ToString(),
-                        payOSResponse.OrderCode,
-                        "01"
-                    ));
+                    // ✅ TẤT CẢ các trường hợp khác đều là cancelled
+                    paymentStatus = "cancelled";
                 }
+
+                _logger.LogInformation($"Final payment status: {paymentStatus}");
+
+                // Return HTML page với deep link
+                var html = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kết quả thanh toán</title>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }}
+        .container {{
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }}
+        .spinner {{
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }}
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
+        h1 {{ font-size: 24px; color: #333; }}
+        p {{ color: #666; margin-top: 12px; }}
+        .icon {{
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }}
+        .icon.success {{ background: #d4edda; color: #28a745; }}
+        .icon.failed {{ background: #f8d7da; color: #dc3545; }}
+        .code {{
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+            color: #333;
+        }}
+        .btn {{
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }}
+        .btn:hover {{ transform: translateY(-2px); }}
+        .auto-redirect {{
+            font-size: 13px;
+            color: #999;
+            margin-top: 16px;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container' id='content'>
+        <div class='spinner'></div>
+        <h1>Đang xử lý...</h1>
+        <p>Vui lòng đợi trong giây lát</p>
+    </div>
+    
+    <script>
+        const paymentStatus = '{paymentStatus}'; // ✅ Chỉ 'paid' hoặc 'cancelled'
+        const code = '{code}';
+        const orderCode = '{orderCode}';
+        
+        // Deep link với status rõ ràng
+        const deepLink = `snapdi://payment/result?status=${{paymentStatus}}&code=${{code}}&orderCode=${{orderCode}}`;
+        
+        console.log('Payment Status:', paymentStatus);
+        console.log('Deep link:', deepLink);
+        
+        // Try to open deep link after 500ms
+        setTimeout(function() {{
+            window.location.href = deepLink;
+        }}, 500);
+        
+        // Show fallback UI after 2 seconds
+        setTimeout(function() {{
+            const iconClass = paymentStatus === 'paid' ? 'success' : 'failed';
+            const iconSymbol = paymentStatus === 'paid' ? '✓' : '✕';
+            const title = paymentStatus === 'paid' ? 'Thanh toán thành công!' : 'Thanh toán không thành công';
+            const description = paymentStatus === 'paid' 
+                ? 'Booking của bạn đã được xác nhận. Vui lòng mở ứng dụng SnapDi để xem chi tiết.'
+                : 'Giao dịch đã bị hủy hoặc thất bại. Vui lòng thử lại.';
+            
+            document.getElementById('content').innerHTML = `
+                <div class='icon ${{iconClass}}'>${{iconSymbol}}</div>
+                <h1>${{title}}</h1>
+                <p>${{description}}</p>
+                <div class='code'>Mã giao dịch: ${{code}}</div>
+                <button class='btn' onclick='openApp()'>Mở ứng dụng SnapDi</button>
+                <p class='auto-redirect'>Nếu không tự động chuyển hướng, vui lòng bấm nút bên trên</p>
+            `;
+        }}, 2000);
+        
+        function openApp() {{
+            window.location.href = deepLink;
+            setTimeout(function() {{
+                alert('Không thể mở ứng dụng tự động. Vui lòng mở ứng dụng SnapDi thủ công.');
+            }}, 1000);
+        }}
+    </script>
+</body>
+</html>";
+
+                return Content(html, "text/html");
             }
             catch (Exception ex)
             {
-                return Redirect(BuildFrontendUrl("failed", Uri.EscapeDataString(ex.Message)));
+                _logger.LogError($"Error in PaymentCallbackPayOS: {ex.Message}");
+
+                // ✅ Error cũng trả về cancelled
+                var errorHtml = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+        .container { background: white; padding: 40px; border-radius: 16px; max-width: 400px; margin: 0 auto; }
+        .icon { font-size: 60px; margin-bottom: 20px; }
+        h2 { color: #333; margin-bottom: 16px; }
+        p { color: #666; margin-bottom: 24px; }
+        .btn { display: inline-block; background: #dc3545; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='icon'>⚠️</div>
+        <h2>Có lỗi xảy ra</h2>
+        <p>Không thể xử lý kết quả thanh toán. Vui lòng liên hệ hỗ trợ.</p>
+        <button class='btn' onclick=""window.location.href='snapdi://payment/result?status=cancelled&error=processing_failed'"">
+            Quay lại ứng dụng
+        </button>
+    </div>
+</body>
+</html>";
+
+                return Content(errorHtml, "text/html");
             }
         }
-
-        private string BuildFrontendUrl(
-          string status,
-          string message,
-          string? bookingId = null,
-          double? transactionRef = null,
-          string? code = null)
-        {
-            // FE base URL: chỉ cần domain (không bao gồm /payment/result)
-            var feBaseUrl = "https://localhost:7000";
-            var url = $"{feBaseUrl}/payment/result?status={status}&message={message}";
-
-            if (!string.IsNullOrEmpty(bookingId))
-                url += $"&bookingId={bookingId}";
-            if (transactionRef.HasValue)
-                url += $"&txnRef={transactionRef}";
-            if (!string.IsNullOrEmpty(code))
-                url += $"&code={code}";
-
-            return url;
-        }
-
         #endregion
     }
 }
