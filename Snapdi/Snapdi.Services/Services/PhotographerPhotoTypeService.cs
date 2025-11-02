@@ -222,6 +222,66 @@ namespace Snapdi.Services.Services
             return true;
         }
 
+        public async Task<bool> UpdatePricesAndResetLevelAsync(int userId, IEnumerable<PhotoTypeWithPricingDto> photoTypeDtos)
+        {
+            // Validate input
+            foreach (var photoTypeDto in photoTypeDtos)
+            {
+                if (photoTypeDto.PhotoPrice == null || photoTypeDto.PhotoPrice <= 0)
+                {
+                    throw new ArgumentException($"Photo price must be greater than 0 for photo type {photoTypeDto.PhotoTypeId}");
+                }
+                if (photoTypeDto.Time == null || photoTypeDto.Time <= 0)
+                {
+                    throw new ArgumentException($"Time must be greater than 0 for photo type {photoTypeDto.PhotoTypeId}");
+                }
+            }
+
+            // Verify photographer profile exists
+            var photographerProfile = await _photographerProfileRepository.GetByUserIdAsync(userId);
+            if (photographerProfile == null)
+            {
+                return false;
+            }
+
+            // Update photo type prices using existing logic
+            var updateResult = await UpdatePhotographerPhotoTypesAsync(userId, photoTypeDtos);
+            if (!updateResult)
+            {
+                return false;
+            }
+
+            // Set levelPhotographer to null after successful price update
+            photographerProfile.LevelPhotographer = null;
+            await _photographerProfileRepository.UpdateAsync(photographerProfile);
+            await _photographerProfileRepository.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<IEnumerable<PhotoTypeWithPricingResponseDto>> GetPhotoTypesWithPricingForUserAsync(int userId)
+        {
+            // Get all photo types
+            var allPhotoTypes = await _photoTypeRepository.GetAllPhotoTypesAsync();
+            
+            // Get photographer's current photo types with pricing
+            var photographerPhotoTypes = await _photographerPhotoTypeRepository.GetByUserIdAsync(userId);
+            var photographerPhotoTypeDict = photographerPhotoTypes.ToDictionary(ppt => ppt.PhotoTypeId);
+
+            // Combine: return all photo types with photographer's pricing if available
+            return allPhotoTypes.Select(photoType => new PhotoTypeWithPricingResponseDto
+            {
+                PhotoTypeId = photoType.PhotoTypeId,
+                PhotoTypeName = photoType.PhotoTypeName,
+                PhotoPrice = photographerPhotoTypeDict.ContainsKey(photoType.PhotoTypeId) 
+                    ? photographerPhotoTypeDict[photoType.PhotoTypeId].PhotoPrice 
+                    : null,
+                Time = photographerPhotoTypeDict.ContainsKey(photoType.PhotoTypeId) 
+                    ? photographerPhotoTypeDict[photoType.PhotoTypeId].Time 
+                    : null
+            });
+        }
+
         private static PhotoTypeWithPricingDto MapToDto(PhotographerPhotoType photographerPhotoType)
         {
             return new PhotoTypeWithPricingDto
