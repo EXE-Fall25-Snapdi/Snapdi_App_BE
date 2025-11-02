@@ -178,6 +178,65 @@ namespace Snapdi.Services.Services
             }
         }
 
+        public async Task<bool> SendPasswordResetCodeAsync(string toEmail, string userName, string resetCode)
+        {
+            try
+            {
+                var subject = "Your Snapdi Password Reset Code";
+
+                var body = $@"
+                    <html>
+                    <body style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                        <div style='text-align: center; margin-bottom: 30px;'>
+                            <h1 style='color: #2196F3; margin-bottom: 10px;'>Snapdi</h1>
+                            <h2 style='color: #333; font-weight: normal;'>Password Reset</h2>
+                        </div>
+                        
+                        <div style='background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px;'>
+                            <p style='color: #333; font-size: 16px; margin-bottom: 20px;'>Hello {userName},</p>
+                            <p style='color: #333; font-size: 16px; margin-bottom: 20px;'>
+                                We received a request to reset your password for your Snapdi account. Please enter the code below to reset your password:
+                            </p>
+                            
+                            <div style='text-align: center; margin: 30px 0;'>
+                                <div style='background-color: #2196F3; color: white; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: 8px; display: inline-block;'>
+                                    {resetCode}
+                                </div>
+                            </div>
+                            
+                            <p style='color: #666; font-size: 14px; text-align: center; margin-top: 20px;'>
+                                This reset code will expire in 15 minutes.
+                            </p>
+                        </div>
+                        
+                        <div style='background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin-bottom: 20px;'>
+                            <p style='color: #721c24; font-size: 14px; margin: 0;'>
+                                <strong>Security Warning:</strong> If you didn't request a password reset, please ignore this email and ensure your account is secure.
+                            </p>
+                        </div>
+                    
+                        <p style='color: #666; font-size: 14px;'>
+                            If you didn't request this password reset, no action is required.
+                        </p>
+                            
+                        <div style='text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;'>
+                            <p style='color: #999; font-size: 12px; margin: 0;'>
+                                Best regards,<br>
+                                The Snapdi Team
+                            </p>
+                        </div>
+                    </body>
+                    </html>";
+
+                return await SendEmailAsync(toEmail, subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset code email to {Email}", toEmail);
+                return false;
+            }
+        }
+
         private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
         {
             try
