@@ -10,8 +10,10 @@ namespace Snapdi.Services.Interfaces
         Task<IEnumerable<PhotoTypeWithPricingDto>> AddMultipleAsync(int userId, IEnumerable<PhotoTypeWithPricingDto> photoTypeDtos);
    Task<PhotoTypeWithPricingDto?> UpdateAsync(int userId, int photoTypeId, PhotoTypeWithPricingDto photoTypeDto);
         Task<bool> DeleteAsync(int userId, int photoTypeId);
-  Task<bool> DeleteAllByUserIdAsync(int userId);
+        Task<bool> DeleteAllByUserIdAsync(int userId);
      Task<bool> ExistsAsync(int userId, int photoTypeId);
     Task<bool> UpdatePhotographerPhotoTypesAsync(int userId, IEnumerable<PhotoTypeWithPricingDto> photoTypeDtos);
+        Task<bool> UpdatePricesAndResetLevelAsync(int userId, IEnumerable<PhotoTypeWithPricingDto> photoTypeDtos);
+        Task<IEnumerable<PhotoTypeWithPricingResponseDto>> GetPhotoTypesWithPricingForUserAsync(int userId);
     }
 }
