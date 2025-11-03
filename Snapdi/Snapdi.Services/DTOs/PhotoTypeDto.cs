@@ -31,8 +31,13 @@ public class UpdatePhotoTypeDto
 /// </summary>
 public class PhotoTypeWithPricingDto
 {
+    [Required(ErrorMessage = "Photo type ID is required")]
     public int PhotoTypeId { get; set; }
+    
+    [Range(0.01, double.MaxValue, ErrorMessage = "Photo price must be greater than 0")]
     public double? PhotoPrice { get; set; }
+    
+    [Range(1, int.MaxValue, ErrorMessage = "Time must be greater than 0")]
     public int? Time { get; set; }
 }
 

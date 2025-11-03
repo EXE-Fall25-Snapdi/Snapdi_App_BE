@@ -62,7 +62,7 @@ namespace Snapdi.Services.Services
 
                 // Configure security protocols
                 //ServicePointManager.Expect100Continue = true;
-
+                var domain = $"{context.Request.Scheme}://{context.Request.Host}";
                 //ServicePointManager.DefaultConnectionLimit = 100;
 
                 // Generate unique order code
@@ -86,11 +86,13 @@ namespace Snapdi.Services.Services
                             price: (int)(model.Amount)
                         )
                     },
-                    returnUrl: returnUrl,
-                    cancelUrl: cancelUrl
+                    // ✅ Return URL trỏ đến BE callback endpoint (KHÔNG phải FE)
+                    returnUrl: $"{domain}/api/Payments/Checkout/PaymentCallbackPayOS",
+
+                    // Cancel URL có thể trỏ đến FE
+                    cancelUrl: $"{domain}/api/Payments/Checkout/PaymentCallbackPayOS" // Deep link hoặc FE URL
                 );
 
-                // Create payment link
                 var createPayment = await _payOS.createPaymentLink(paymentData);
 
                 if (createPayment != null)

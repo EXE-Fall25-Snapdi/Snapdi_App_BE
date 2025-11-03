@@ -368,6 +368,72 @@ namespace Snapdi.Api.Controllers
         }
 
         /// <summary>
+        /// Request password reset code
+        /// </summary>
+        /// <param name="forgotPasswordDto">Email to send reset code to</param>
+        /// <returns>Send result</returns>
+        /// <response code="200">Password reset code sent</response>
+        /// <response code="400">Invalid email or rate limited</response>
+        /// <response code="404">User not found</response>
+        [HttpPost("forgot-password")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _userService.GetUserByEmailAsync(forgotPasswordDto.Email);
+            if (user == null)
+                return NotFound("User not found");
+
+            if (!user.IsActive)
+                return BadRequest("Account is not active");
+
+            var result = await _userService.SendPasswordResetCodeAsync(forgotPasswordDto.Email);
+            if (!result)
+                return BadRequest("Failed to send password reset code. Please try again in a few minutes.");
+
+            return Ok(new { Message = "Password reset code sent to your email. Please check your inbox." });
+        }
+
+        /// <summary>
+        /// Reset password using reset code
+        /// </summary>
+        /// <param name="resetPasswordDto">Reset password data including code and new password</param>
+        /// <returns>Reset result</returns>
+        /// <response code="200">Password reset successful</response>
+        /// <response code="400">Invalid or expired code, or validation error</response>
+        /// <response code="404">User not found</response>
+        [HttpPost("reset-password")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _userService.GetUserByEmailAsync(resetPasswordDto.Email);
+            if (user == null)
+                return NotFound("User not found");
+
+            if (!user.IsActive)
+                return BadRequest("Account is not active");
+
+            var result = await _userService.ResetPasswordWithCodeAsync(
+                resetPasswordDto.Email,
+                resetPasswordDto.Code,
+                resetPasswordDto.NewPassword);
+
+            if (!result)
+                return BadRequest("Invalid or expired reset code");
+
+            return Ok(new { Message = "Password reset successful. You can now login with your new password." });
+        }
+
+        /// <summary>
         /// Refresh authentication token
         /// </summary>
         /// <param name="refreshTokenDto">Refresh token data</param>
@@ -514,5 +580,67 @@ namespace Snapdi.Api.Controllers
         /// </summary>
         [Required]
         public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// DTO for resending verification code
+    /// </summary>
+    public class ResendVerificationCodeDto
+    {
+        /// <summary>
+        /// User's email address to resend verification code to
+        /// </summary>
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please provide a valid email address")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// DTO for forgot password request
+    /// </summary>
+    public class ForgotPasswordDto
+    {
+        /// <summary>
+        /// User's email address to send password reset code
+        /// </summary>
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please provide a valid email address")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// DTO for resetting password with code
+    /// </summary>
+    public class ResetPasswordDto
+    {
+        /// <summary>
+        /// User's email address
+        /// </summary>
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please provide a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 6-digit reset code sent to email
+        /// </summary>
+        [Required(ErrorMessage = "Reset code is required")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Reset code must be exactly 6 digits")]
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "Reset code must be 6 digits")]
+        public string Code { get; set; } = string.Empty;
+
+        /// <summary>
+        /// New password
+        /// </summary>
+        [Required(ErrorMessage = "New password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+        [MaxLength(255, ErrorMessage = "Password cannot exceed 255 characters")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Confirm new password
+        /// </summary>
+        [Required(ErrorMessage = "Password confirmation is required")]
+        [Compare("NewPassword", ErrorMessage = "Passwords do not match")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }
