@@ -70,25 +70,25 @@ namespace Snapdi.Services.Services
         public async Task<DashboardStatisticsDto> GetDashboardStatisticsAsync()
         {
             var today = DateTime.UtcNow.Date;
+            var endOfToday = today.AddDays(1).AddSeconds(-1);
 
             // Get user statistics
             var totalUsers = await _userRepository.GetUserCountByRoleAsync();
             var totalAdmin = await _userRepository.GetUserCountByRoleAsync(1); //RoleId 1 = admin
-            var totalPhotographers = await _userRepository.GetUserCountByRoleAsync(3); // RoleId 2 = Photographer
-            var totalCustomers = await _userRepository.GetUserCountByRoleAsync(2); // RoleId 3 = Customer
+            var totalPhotographers = await _userRepository.GetUserCountByRoleAsync(3); // RoleId 3 = Photographer
+            var totalCustomers = await _userRepository.GetUserCountByRoleAsync(2); // RoleId 2 = Customer
 
-            // Get revenue statistics
-            var totalRevenue = await _bookingRepository.GetTotalRevenueAsync();
-            var todayCompletedBookings = await _bookingRepository.GetCompletedBookingsCountAsync(today);
-            
-            // Calculate today's revenue by getting completed bookings for today
-            var todayRevenue = 0.0;
-            // Note: We would need a method to get today's revenue specifically
-            // For now, we'll estimate based on average if needed
+            // Get today's revenue and transactions from payments
+            var todayPayments = await _paymentRepository.GetPaymentsByDateRangeAsync(today, endOfToday);
+            var todayRevenue = todayPayments.Sum(p => p.Amount);
+            var todayTransactions = todayPayments.Count();
 
-            // Get transaction statistics
-            var totalTransactions = await _bookingRepository.GetCompletedBookingsCountAsync();
-            var todayTransactions = todayCompletedBookings;
+            // Get total revenue and transactions from all time (using a safe start date for SQL Server)
+            // SQL Server DateTime range: 1/1/1753 to 12/31/9999
+            var sqlServerMinDate = new DateTime(1753, 1, 1);
+            var allPayments = await _paymentRepository.GetPaymentsByDateRangeAsync(sqlServerMinDate, DateTime.MaxValue);
+            var totalRevenue = allPayments.Sum(p => p.Amount);
+            var totalTransactions = allPayments.Count();
 
             return new DashboardStatisticsDto
             {

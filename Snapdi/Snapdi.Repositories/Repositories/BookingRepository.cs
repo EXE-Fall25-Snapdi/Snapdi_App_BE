@@ -241,8 +241,8 @@ namespace Snapdi.Repositories.Repositories
             var query = _dbSet
                 .Include(b => b.Status)
                 .Where(b => b.Status != null && 
-                           (b.Status.StatusName.ToLower() == "done" ||
-                            b.Status.StatusName.ToLower() == "completed" ||
+                           (b.Status.StatusName.ToLower() == "paid" ||
+                            b.Status.StatusName.ToLower() == "confirmed" ||
                             b.Status.StatusName.ToLower() == "finished"));
 
             if (date.HasValue)
@@ -260,8 +260,8 @@ namespace Snapdi.Repositories.Repositories
             var totalRevenue = await _dbSet
                 .Include(b => b.Status)
                 .Where(b => b.Status != null && 
-                           (b.Status.StatusName.ToLower() == "done" ||
-                            b.Status.StatusName.ToLower() == "completed" ||
+                           (b.Status.StatusName.ToLower() == "paid" ||
+                            b.Status.StatusName.ToLower() == "confirmed" ||
                             b.Status.StatusName.ToLower() == "finished"))
                 .SumAsync(b => b.Price);
 
