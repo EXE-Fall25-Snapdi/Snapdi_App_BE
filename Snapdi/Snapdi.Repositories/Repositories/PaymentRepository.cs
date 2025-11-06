@@ -285,9 +285,18 @@ namespace Snapdi.Repositories.Repositories
             // Calculate summary statistics
             var payments = await query.ToListAsync();
 
-            var totalAmount = payments.Sum(p => p.Amount);
-            var totalFeeAmount = payments.Sum(p => p.FeeAmount ?? 0);
-            var totalNetAmount = payments.Sum(p => p.NetAmount ?? 0);
+            // Only calculate totals for payments with 'paid' or 'confirmed' status
+            var validPayments = payments
+                .Where(p => p.PaymentStatus != null && 
+                           (p.PaymentStatus.StatusName.ToLower().Contains("paid") ||
+                            p.PaymentStatus.StatusName.ToLower().Contains("confirmed") ||
+                            p.PaymentStatus.StatusName.ToLower().Contains("done") ||
+                            p.PaymentStatus.StatusName.ToLower().Contains("completed")))
+                .ToList();
+
+            var totalAmount = validPayments.Sum(p => p.Amount);
+            var totalFeeAmount = validPayments.Sum(p => p.FeeAmount ?? 0);
+            var totalNetAmount = validPayments.Sum(p => p.NetAmount ?? 0);
 
             var confirmedCount = payments.Count(p => p.PaymentStatus != null &&
                                                p.PaymentStatus.StatusName.ToLower().Contains("confirmed"));

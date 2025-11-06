@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Snapdi.Repositories.Models;
 
+[Table("Messages")]
 public partial class Message
 {
     [Key]
@@ -20,13 +21,11 @@ public partial class Message
 
     public string Content { get; set; } = null!;
 
-    [Column(TypeName = "datetime")]
     public DateTime SendAt { get; set; }
 
     [StringLength(50)]
     public string? Status { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? ExpiredDate { get; set; }
 
     [ForeignKey("ConversationId")]

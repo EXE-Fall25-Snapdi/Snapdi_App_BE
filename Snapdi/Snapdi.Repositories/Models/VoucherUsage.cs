@@ -22,7 +22,6 @@ public partial class VoucherUsage
     [Column("UserID")]
     public int? UserId { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime UsedAt { get; set; }
 
     [ForeignKey("BookingId")]

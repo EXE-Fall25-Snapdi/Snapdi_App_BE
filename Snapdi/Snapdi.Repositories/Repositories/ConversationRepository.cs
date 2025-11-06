@@ -55,32 +55,41 @@ namespace Snapdi.Repositories.Repositories
 
         public async Task<int> CreateSupportConversationAsync(int userId, int adminUserId)
         {
-            var conversation = new Conversation
+            // ✅ Execute the entire operation within the execution strategy
+            var strategy = _context.Database.CreateExecutionStrategy();
+            
+            return await strategy.ExecuteAsync(async () =>
             {
-                Type = "support",
-                CreateAt = DateTime.UtcNow
-            };
-
-            _context.Conversations.Add(conversation);
-            await _context.SaveChangesAsync();
-
-            _context.ConversationParticipants.AddRange(
-                new ConversationParticipant
+                // Create conversation
+                var conversation = new Conversation
                 {
-                    ConversationId = conversation.ConversationId,
-                    UserId = userId,
-                    JoinedAt = DateTime.UtcNow
-                },
-                new ConversationParticipant
-                {
-                    ConversationId = conversation.ConversationId,
-                    UserId = adminUserId,
-                    JoinedAt = DateTime.UtcNow
-                }
-            );
+                    Type = "support",
+                    CreateAt = DateTime.UtcNow
+                };
 
-            await _context.SaveChangesAsync();
-            return conversation.ConversationId;
+                _context.Conversations.Add(conversation);
+                await _context.SaveChangesAsync();
+
+                // Add participants
+                _context.ConversationParticipants.AddRange(
+                    new ConversationParticipant
+                    {
+                        ConversationId = conversation.ConversationId,
+                        UserId = userId,
+                        JoinedAt = DateTime.UtcNow
+                    },
+                    new ConversationParticipant
+                    {
+                        ConversationId = conversation.ConversationId,
+                        UserId = adminUserId,
+                        JoinedAt = DateTime.UtcNow
+                    }
+                );
+
+                await _context.SaveChangesAsync();
+                
+                return conversation.ConversationId;
+            });
         }
 
         public async Task<int?> GetDirectConversationAsync(int userId1, int userId2)
@@ -102,32 +111,41 @@ namespace Snapdi.Repositories.Repositories
 
         public async Task<int> CreateDirectConversationAsync(int userId1, int userId2)
         {
-            var conversation = new Conversation
+            // ✅ Execute the entire operation within the execution strategy
+            var strategy = _context.Database.CreateExecutionStrategy();
+            
+            return await strategy.ExecuteAsync(async () =>
             {
-                Type = "direct",
-                CreateAt = DateTime.UtcNow
-            };
-
-            _context.Conversations.Add(conversation);
-            await _context.SaveChangesAsync();
-
-            _context.ConversationParticipants.AddRange(
-                new ConversationParticipant
+                // Create conversation
+                var conversation = new Conversation
                 {
-                    ConversationId = conversation.ConversationId,
-                    UserId = userId1,
-                    JoinedAt = DateTime.UtcNow
-                },
-                new ConversationParticipant
-                {
-                    ConversationId = conversation.ConversationId,
-                    UserId = userId2,
-                    JoinedAt = DateTime.UtcNow
-                }
-            );
+                    Type = "direct",
+                    CreateAt = DateTime.UtcNow
+                };
 
-            await _context.SaveChangesAsync();
-            return conversation.ConversationId;
+                _context.Conversations.Add(conversation);
+                await _context.SaveChangesAsync();
+
+                // Add participants
+                _context.ConversationParticipants.AddRange(
+                    new ConversationParticipant
+                    {
+                        ConversationId = conversation.ConversationId,
+                        UserId = userId1,
+                        JoinedAt = DateTime.UtcNow
+                    },
+                    new ConversationParticipant
+                    {
+                        ConversationId = conversation.ConversationId,
+                        UserId = userId2,
+                        JoinedAt = DateTime.UtcNow
+                    }
+                );
+
+                await _context.SaveChangesAsync();
+                
+                return conversation.ConversationId;
+            });
         }
 
         public async Task UpdateLastReadMessageAsync(int conversationId, int userId, int messageId)

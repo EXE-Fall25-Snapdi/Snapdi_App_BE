@@ -33,7 +33,6 @@ public partial class Payment
     [Column("PaymentStatusID")]
     public int? PaymentStatusId { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime PaymentDate { get; set; }
 
     [ForeignKey("BookingId")]

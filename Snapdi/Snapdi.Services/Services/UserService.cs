@@ -240,38 +240,57 @@ namespace Snapdi.Services.Services
 
         public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
-                return null;
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    return null;
 
-            if (!string.IsNullOrEmpty(updateUserDto.Name))
-                user.Name = updateUserDto.Name;
+                if (!string.IsNullOrEmpty(updateUserDto.Name))
+                    user.Name = updateUserDto.Name;
 
-            if (updateUserDto.Phone != null)
-                user.Phone = updateUserDto.Phone;
+                if (updateUserDto.Phone != null)
+                    user.Phone = updateUserDto.Phone;
 
-            if (updateUserDto.LocationAddress != null)
-                user.LocationAddress = updateUserDto.LocationAddress;
+                if (updateUserDto.LocationAddress != null)
+                    user.LocationAddress = updateUserDto.LocationAddress;
 
-            if (updateUserDto.LocationCity != null)
-                user.LocationCity = updateUserDto.LocationCity;
+                if (updateUserDto.LocationCity != null)
+                    user.LocationCity = updateUserDto.LocationCity;
 
-            if (updateUserDto.AvatarUrl != null)
-                user.AvatarUrl = updateUserDto.AvatarUrl;
+                if (updateUserDto.AvatarUrl != null)
+                    user.AvatarUrl = updateUserDto.AvatarUrl;
 
-            if (updateUserDto.IsActive.HasValue)
-                user.IsActive = updateUserDto.IsActive.Value;
+                if (updateUserDto.IsActive.HasValue)
+                    user.IsActive = updateUserDto.IsActive.Value;
 
-            if (updateUserDto.IsVerify.HasValue)
-                user.IsVerify = updateUserDto.IsVerify.Value;
+                if (updateUserDto.IsVerify.HasValue)
+                    user.IsVerify = updateUserDto.IsVerify.Value;
 
-            if (updateUserDto.CurrentLocation != null)
-                user.CurrentLocation = CreatePoint(updateUserDto.CurrentLocation.Longitude, updateUserDto.CurrentLocation.Latitude);
+                if (updateUserDto.CurrentLocation != null)
+                {
+                    try
+                    {
+                        user.CurrentLocation = CreatePoint(updateUserDto.CurrentLocation.Longitude, updateUserDto.CurrentLocation.Latitude);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error creating point for CurrentLocation: {ex.Message}");
+                        // Skip updating current location if there's an error
+                    }
+                }
 
-            await _userRepository.UpdateAsync(user);
-            await _userRepository.SaveChangesAsync();
+                await _userRepository.UpdateAsync(user);
+                await _userRepository.SaveChangesAsync();
 
-            return MapToUserDto(user);
+                return MapToUserDto(user);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateUserAsync: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw; // Re-throw to let controller handle it
+            }
         }
 
         public async Task<bool> DeleteUserAsync(int userId)
@@ -891,7 +910,7 @@ namespace Snapdi.Services.Services
                 .Select(ppt => new PhotoTypeWithPricingResponseDto
                 {
                     PhotoTypeId = ppt.PhotoTypeId,
-                    PhotoTypeName = ppt.PhotoType?.PhotoTypeName,
+                    PhotoTypeName = ppt.PhotoType?.PhotoTypeName ?? string.Empty,
                     PhotoPrice = ppt.PhotoPrice,
                     Time = ppt.Time
                 })
@@ -975,7 +994,7 @@ namespace Snapdi.Services.Services
                 .Select(ppt => new PhotoTypeWithPricingResponseDto
                 {
                     PhotoTypeId = ppt.PhotoTypeId,
-                    PhotoTypeName = ppt.PhotoType?.PhotoTypeName,
+                    PhotoTypeName = ppt.PhotoType?.PhotoTypeName ?? string.Empty,
                     PhotoPrice = ppt.PhotoPrice,
                     Time = ppt.Time
                 })
@@ -1046,7 +1065,7 @@ namespace Snapdi.Services.Services
                  .Select(ppt => new PhotoTypeWithPricingResponseDto
                  {
                      PhotoTypeId = ppt.PhotoTypeId,
-                     PhotoTypeName = ppt.PhotoType?.PhotoTypeName,
+                     PhotoTypeName = ppt.PhotoType?.PhotoTypeName ?? string.Empty,
                      PhotoPrice = ppt.PhotoPrice,
                      Time = ppt.Time
                  })

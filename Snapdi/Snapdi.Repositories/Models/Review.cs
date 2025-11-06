@@ -26,7 +26,6 @@ public partial class Review
 
     public string? Comment { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime CreateAt { get; set; }
 
     [ForeignKey("BookingId")]

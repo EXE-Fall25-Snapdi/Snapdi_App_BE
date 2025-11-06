@@ -33,14 +33,12 @@ public partial class User
     [StringLength(255)]
     public string? RefreshToken { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? ExpiredRefreshTokenAt { get; set; }
 
     public bool IsActive { get; set; }
 
     public bool IsVerify { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime CreatedAt { get; set; }
 
     [StringLength(255)]
@@ -56,8 +54,8 @@ public partial class User
     /// Current location of the user stored as a geographic point (latitude, longitude).
     /// Used for OpenStreetMap integration on the frontend.
     /// Format: POINT(longitude latitude) - Note: longitude comes first in WKT format
+    /// For PostgreSQL with PostGIS: Uses geometry type with SRID 4326 (WGS 84)
     /// </summary>
-    [Column(TypeName = "geography")]
     public Point? CurrentLocation { get; set; }
 
     [InverseProperty("Author")]

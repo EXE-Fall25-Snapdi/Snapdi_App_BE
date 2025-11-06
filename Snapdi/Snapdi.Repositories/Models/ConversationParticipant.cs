@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Snapdi.Repositories.Models;
 
+[Table("ConversationParticipants")]
 [PrimaryKey("ConversationId", "UserId")]
 public partial class ConversationParticipant
 {
@@ -17,13 +18,11 @@ public partial class ConversationParticipant
     [Column("UserID")]
     public int UserId { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime JoinedAt { get; set; }
 
     // Optional read-tracking fields for unread counts and receipts
     public int? LastReadMessageId { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? LastReadAt { get; set; }
 
     [ForeignKey("ConversationId")]

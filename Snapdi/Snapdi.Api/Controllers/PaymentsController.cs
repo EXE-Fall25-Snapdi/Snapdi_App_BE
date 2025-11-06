@@ -390,10 +390,8 @@ namespace Snapdi.Api.Controllers
         {
             try
             {
-                await using var transaction = await _db.Database.BeginTransactionAsync();
                 if (!ModelState.IsValid)
                 {
-                    await transaction.RollbackAsync();
                     return BadRequest(new
                     {
                         error = "Validation failed",
@@ -410,7 +408,6 @@ namespace Snapdi.Api.Controllers
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
                 {
-                    await transaction.RollbackAsync();
                     return BadRequest(new { error = "Invalid token", message = "User ID not found in token claims" });
                 }
 
@@ -418,21 +415,18 @@ namespace Snapdi.Api.Controllers
                 var booking = await _bookingService.GetBookingByIdAsync(request.BookingId);
                 if (booking == null)
                 {
-                    await transaction.RollbackAsync();
                     return NotFound(new { error = "Booking not found", message = $"Booking with ID {request.BookingId} does not exist" });
                 }
 
                 // Only customer can create payment for their booking
                 if (booking.Customer?.UserId != userId)
                 {
-                    await transaction.RollbackAsync();
                     throw new Exception("You can only create payment for your own bookings");
                 }
 
                 var customer = await _userService.GetUserByIdAsync(userId);
                 if (customer == null)
                 {
-                    await transaction.RollbackAsync();
                     return NotFound(new { error = "User not found", message = $"User with ID {userId} does not exist" });
                 }
 
@@ -450,8 +444,6 @@ namespace Snapdi.Api.Controllers
                     paymentInformation,
                     HttpContext
                 );
-
-                await transaction.CommitAsync();
 
                 return Ok(new
                 {

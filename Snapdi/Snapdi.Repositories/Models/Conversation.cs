@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Snapdi.Repositories.Models;
 
+[Table("Conversations")]
 public partial class Conversation
 {
     [Key]
@@ -15,7 +16,6 @@ public partial class Conversation
     [StringLength(50)]
     public string? Type { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime CreateAt { get; set; }
 
     [InverseProperty("Conversation")]

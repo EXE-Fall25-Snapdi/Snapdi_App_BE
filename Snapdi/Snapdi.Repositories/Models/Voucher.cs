@@ -29,10 +29,8 @@ public partial class Voucher
 
     public double? MinSpend { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime StartDate { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime EndDate { get; set; }
 
     public int? UsageLimit { get; set; }

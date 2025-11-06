@@ -18,10 +18,8 @@ public partial class FeePolicy
 
     public double FeePercent { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime EffectiveDate { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? ExpiryDate { get; set; }
 
     public bool IsActive { get; set; }

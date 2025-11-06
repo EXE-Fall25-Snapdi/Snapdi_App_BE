@@ -24,10 +24,8 @@ public partial class Blog
 
     public string Content { get; set; } = null!;
 
-    [Column(TypeName = "datetime")]
     public DateTime CreateAt { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime? UpdateAt { get; set; }
 
     public bool IsActive { get; set; }

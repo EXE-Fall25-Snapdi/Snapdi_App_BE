@@ -19,7 +19,6 @@ public partial class Booking
     [Column("PhotographerID")]
     public int? PhotographerId { get; set; }
 
-    [Column(TypeName = "datetime")]
     public DateTime ScheduleAt { get; set; }
 
     [StringLength(255)]

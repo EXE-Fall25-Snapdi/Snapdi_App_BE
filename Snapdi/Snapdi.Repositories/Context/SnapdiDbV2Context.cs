@@ -97,16 +97,56 @@ public partial class SnapdiDbV2Context : DbContext
             {
                 if (property.Metadata.ClrType == typeof(DateTime))
                 {
-                    if (property.CurrentValue is DateTime dateTime && dateTime.Kind != DateTimeKind.Utc)
+                    if (property.CurrentValue is DateTime dateTime)
                     {
-                        property.CurrentValue = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                        Console.WriteLine($"Processing DateTime property '{property.Metadata.Name}': Value={dateTime}, Kind={dateTime.Kind}");
+                        
+                        // Convert to UTC if not already
+                        if (dateTime.Kind == DateTimeKind.Unspecified)
+                        {
+                            // Assume Unspecified is already UTC (from database reads)
+                            var utcValue = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                            property.CurrentValue = utcValue;
+                            Console.WriteLine($"  -> Converted Unspecified to UTC: {utcValue}");
+                        }
+                        else if (dateTime.Kind == DateTimeKind.Local)
+                        {
+                            // Convert Local to UTC
+                            var utcValue = dateTime.ToUniversalTime();
+                            property.CurrentValue = utcValue;
+                            Console.WriteLine($"  -> Converted Local to UTC: {utcValue}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"  -> Already UTC, no conversion needed");
+                        }
                     }
                 }
                 else if (property.Metadata.ClrType == typeof(DateTime?))
                 {
-                    if (property.CurrentValue is DateTime dt && dt.Kind != DateTimeKind.Utc)
+                    if (property.CurrentValue is DateTime dt)
                     {
-                        property.CurrentValue = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                        Console.WriteLine($"Processing nullable DateTime property '{property.Metadata.Name}': Value={dt}, Kind={dt.Kind}");
+                        
+                        // Convert to UTC if not already
+                        if (dt.Kind == DateTimeKind.Unspecified)
+                        {
+                            // Assume Unspecified is already UTC (from database reads)
+                            var utcValue = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                            property.CurrentValue = utcValue;
+                            Console.WriteLine($"  -> Converted Unspecified to UTC: {utcValue}");
+                        }
+                        else if (dt.Kind == DateTimeKind.Local)
+                        {
+                            // Convert Local to UTC
+                            var utcValue = dt.ToUniversalTime();
+                            property.CurrentValue = utcValue;
+                            Console.WriteLine($"  -> Converted Local to UTC: {utcValue}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"  -> Already UTC, no conversion needed");
+                        }
                     }
                 }
             }
@@ -296,8 +336,17 @@ public partial class SnapdiDbV2Context : DbContext
             entity.HasOne(d => d.Role).WithMany(p => p.Users).HasConstraintName("FK__User__RoleID__3C69FB99");
 
             // Configure spatial data for CurrentLocation
+            // For PostgreSQL with PostGIS: Uses geometry(Point, 4326) type
+            // SRID 4326 is WGS 84 coordinate system (used by GPS)
             entity.Property(e => e.CurrentLocation)
-                .HasColumnType("geography");
+                .HasColumnType("geometry(Point, 4326)");
+
+            // Configure DateTime properties for PostgreSQL compatibility
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp with time zone");
+            
+            entity.Property(e => e.ExpiredRefreshTokenAt)
+                .HasColumnType("timestamp with time zone");
         });
 
         modelBuilder.Entity<Voucher>(entity =>
