@@ -269,14 +269,14 @@ namespace Snapdi.Repositories.Repositories
 
         public override async Task<Blog> AddAsync(Blog entity)
         {
-            entity.CreateAt = DateTime.Now;
+            entity.CreateAt = DateTime.UtcNow;
             // Remove the hardcoded IsActive = true to allow setting from CreateBlogDto
             return await base.AddAsync(entity);
         }
 
         public override async Task UpdateAsync(Blog entity)
         {
-            entity.UpdateAt = DateTime.Now;
+            entity.UpdateAt = DateTime.UtcNow;
             await base.UpdateAsync(entity);
         }
     }

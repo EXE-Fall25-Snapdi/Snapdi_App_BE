@@ -69,6 +69,7 @@ namespace Snapdi.Repositories.Repositories
         {
             _dbSet.Update(entity);
             await Task.CompletedTask;
+            await Task.CompletedTask;
         }
 
         public virtual async Task DeleteAsync(T entity)

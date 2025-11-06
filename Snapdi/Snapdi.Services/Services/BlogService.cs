@@ -142,7 +142,7 @@ namespace Snapdi.Services.Services
                 ThumbnailUrl = createBlogDto.ThumbnailUrl,
                 Content = createBlogDto.Content,
                 AuthorId = createBlogDto.AuthorId,
-                CreateAt = DateTime.Now,
+                CreateAt = DateTime.UtcNow,
                 IsActive = createBlogDto.IsActive
             };
 
@@ -183,7 +183,7 @@ namespace Snapdi.Services.Services
             blog.ThumbnailUrl = updateBlogDto.ThumbnailUrl;
             blog.Content = updateBlogDto.Content;
             blog.IsActive = updateBlogDto.IsActive;
-            blog.UpdateAt = DateTime.Now;
+            blog.UpdateAt = DateTime.UtcNow;
 
             await _blogRepository.UpdateAsync(blog);
 
