@@ -269,23 +269,14 @@ namespace Snapdi.Repositories.Repositories
 
         public override async Task<Blog> AddAsync(Blog entity)
         {
-            // Ensure DateTime is explicitly UTC for PostgreSQL
-            entity.CreateAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            entity.CreateAt = DateTime.Now;
             // Remove the hardcoded IsActive = true to allow setting from CreateBlogDto
             return await base.AddAsync(entity);
         }
 
         public override async Task UpdateAsync(Blog entity)
         {
-            // Ensure DateTime is explicitly UTC for PostgreSQL
-            entity.UpdateAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-            
-            // Ensure CreateAt is also UTC if it was loaded from database
-            if (entity.CreateAt.Kind != DateTimeKind.Utc)
-            {
-                entity.CreateAt = DateTime.SpecifyKind(entity.CreateAt, DateTimeKind.Utc);
-            }
-            
+            entity.UpdateAt = DateTime.Now;
             await base.UpdateAsync(entity);
         }
     }

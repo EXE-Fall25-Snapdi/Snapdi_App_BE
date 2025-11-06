@@ -28,9 +28,9 @@ namespace Snapdi.Services.Services
         /// </summary>
         public async Task<DashboardRevenueResponseDto> GetRevenueByDayAsync(DateTime startDate, DateTime endDate)
         {
-            // Ensure start date is at beginning of day and end date is at end of day
-            startDate = startDate.Date;
-            endDate = endDate.Date.AddDays(1).AddSeconds(-1);
+            // Convert to UTC and ensure start date is at beginning of day and end date is at end of day
+            startDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
+            endDate = DateTime.SpecifyKind(endDate.Date.AddDays(1).AddSeconds(-1), DateTimeKind.Utc);
 
             // Get all payments in the date range
             var payments = await _paymentRepository.GetPaymentsByDateRangeAsync(startDate, endDate);
@@ -70,25 +70,28 @@ namespace Snapdi.Services.Services
         public async Task<DashboardStatisticsDto> GetDashboardStatisticsAsync()
         {
             var today = DateTime.UtcNow.Date;
+            var endOfToday = today.AddDays(1).AddSeconds(-1);
 
             // Get user statistics
             var totalUsers = await _userRepository.GetUserCountByRoleAsync();
             var totalAdmin = await _userRepository.GetUserCountByRoleAsync(1); //RoleId 1 = admin
-            var totalPhotographers = await _userRepository.GetUserCountByRoleAsync(3); // RoleId 2 = Photographer
-            var totalCustomers = await _userRepository.GetUserCountByRoleAsync(2); // RoleId 3 = Customer
+            var totalPhotographers = await _userRepository.GetUserCountByRoleAsync(3); // RoleId 3 = Photographer
+            var totalCustomers = await _userRepository.GetUserCountByRoleAsync(2); // RoleId 2 = Customer
 
-            // Get revenue statistics
-            var totalRevenue = await _bookingRepository.GetTotalRevenueAsync();
-            var todayCompletedBookings = await _bookingRepository.GetCompletedBookingsCountAsync(today);
+            // Get today's revenue and transactions from payments
+            var todayPayments = await _paymentRepository.GetPaymentsByDateRangeAsync(today, endOfToday);
+            var todayRevenue = todayPayments.Sum(p => p.Amount);
+            var todayTransactions = todayPayments.Count();
+
+            // Get total revenue and transactions from all time
+            // Use a reasonable start date (e.g., 10 years ago) instead of DateTime.MinValue
+            // This avoids PostgreSQL/SQL Server DateTime range issues
+            var allTimeStartDate = DateTime.SpecifyKind(new DateTime(2000, 1, 1), DateTimeKind.Utc);
+            var allTimeEndDate = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddYears(1), DateTimeKind.Utc); // Include future payments
             
-            // Calculate today's revenue by getting completed bookings for today
-            var todayRevenue = 0.0;
-            // Note: We would need a method to get today's revenue specifically
-            // For now, we'll estimate based on average if needed
-
-            // Get transaction statistics
-            var totalTransactions = await _bookingRepository.GetCompletedBookingsCountAsync();
-            var todayTransactions = todayCompletedBookings;
+            var allPayments = await _paymentRepository.GetPaymentsByDateRangeAsync(allTimeStartDate, allTimeEndDate);
+            var totalRevenue = allPayments.Sum(p => p.Amount);
+            var totalTransactions = allPayments.Count();
 
             return new DashboardStatisticsDto
             {
