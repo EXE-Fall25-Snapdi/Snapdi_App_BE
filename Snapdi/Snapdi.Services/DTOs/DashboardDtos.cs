@@ -65,6 +65,47 @@ namespace Snapdi.Services.DTOs
     }
 
     /// <summary>
+    /// DTO for review statistics
+    /// </summary>
+    public class ReviewStatisticsDto
+    {
+        /// <summary>
+        /// Total number of reviews
+        /// </summary>
+        public int TotalReviews { get; set; }
+
+        /// <summary>
+        /// Average rating (0.0 to 5.0)
+        /// </summary>
+        public double AverageRating { get; set; }
+
+        /// <summary>
+        /// Number of 5-star reviews
+        /// </summary>
+        public int FiveStarCount { get; set; }
+
+        /// <summary>
+        /// Number of 4-star reviews
+        /// </summary>
+        public int FourStarCount { get; set; }
+
+        /// <summary>
+        /// Number of 3-star reviews
+        /// </summary>
+        public int ThreeStarCount { get; set; }
+
+        /// <summary>
+        /// Number of 2-star reviews
+        /// </summary>
+        public int TwoStarCount { get; set; }
+
+        /// <summary>
+        /// Number of 1-star reviews
+        /// </summary>
+        public int OneStarCount { get; set; }
+    }
+
+    /// <summary>
     /// Complete dashboard statistics
     /// </summary>
     public class DashboardStatisticsDto
@@ -72,6 +113,7 @@ namespace Snapdi.Services.DTOs
         public UserStatisticsDto UserStatistics { get; set; } = new UserStatisticsDto();
         public RevenueStatisticsDto RevenueStatistics { get; set; } = new RevenueStatisticsDto();
         public TransactionStatisticsDto TransactionStatistics { get; set; } = new TransactionStatisticsDto();
+        public ReviewStatisticsDto ReviewStatistics { get; set; } = new ReviewStatisticsDto();
     }
 }
 

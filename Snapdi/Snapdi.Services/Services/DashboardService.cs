@@ -12,15 +12,18 @@ namespace Snapdi.Services.Services
         private readonly IPaymentRepository _paymentRepository;
         private readonly IUserRepository _userRepository;
         private readonly IBookingRepository _bookingRepository;
+        private readonly IReviewRepository _reviewRepository;
 
         public DashboardService(
             IPaymentRepository paymentRepository,
             IUserRepository userRepository,
-            IBookingRepository bookingRepository)
+            IBookingRepository bookingRepository,
+            IReviewRepository reviewRepository)
         {
             _paymentRepository = paymentRepository;
             _userRepository = userRepository;
             _bookingRepository = bookingRepository;
+            _reviewRepository = reviewRepository;
         }
 
         /// <summary>
@@ -28,9 +31,9 @@ namespace Snapdi.Services.Services
         /// </summary>
         public async Task<DashboardRevenueResponseDto> GetRevenueByDayAsync(DateTime startDate, DateTime endDate)
         {
-            // Ensure start date is at beginning of day and end date is at end of day
-            startDate = startDate.Date;
-            endDate = endDate.Date.AddDays(1).AddSeconds(-1);
+            // Convert to UTC and ensure start date is at beginning of day and end date is at end of day
+            startDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
+            endDate = DateTime.SpecifyKind(endDate.Date.AddDays(1).AddSeconds(-1), DateTimeKind.Utc);
 
             // Get all payments in the date range
             var payments = await _paymentRepository.GetPaymentsByDateRangeAsync(startDate, endDate);
@@ -65,7 +68,7 @@ namespace Snapdi.Services.Services
         }
 
         /// <summary>
-        /// Get complete dashboard statistics including user counts, revenue, and transactions
+        /// Get complete dashboard statistics including user counts, revenue, transactions, and reviews
         /// </summary>
         public async Task<DashboardStatisticsDto> GetDashboardStatisticsAsync()
         {
@@ -83,12 +86,20 @@ namespace Snapdi.Services.Services
             var todayRevenue = todayPayments.Sum(p => p.Amount);
             var todayTransactions = todayPayments.Count();
 
-            // Get total revenue and transactions from all time (using a safe start date for SQL Server)
-            // SQL Server DateTime range: 1/1/1753 to 12/31/9999
-            var sqlServerMinDate = new DateTime(1753, 1, 1);
-            var allPayments = await _paymentRepository.GetPaymentsByDateRangeAsync(sqlServerMinDate, DateTime.MaxValue);
+            // Get total revenue and transactions from all time
+            // Use a reasonable start date (e.g., year 2000) instead of DateTime.MinValue
+            // This avoids PostgreSQL/SQL Server DateTime range issues
+            var allTimeStartDate = DateTime.SpecifyKind(new DateTime(2000, 1, 1), DateTimeKind.Utc);
+            var allTimeEndDate = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddYears(1), DateTimeKind.Utc); // Include future payments
+            
+            var allPayments = await _paymentRepository.GetPaymentsByDateRangeAsync(allTimeStartDate, allTimeEndDate);
             var totalRevenue = allPayments.Sum(p => p.Amount);
             var totalTransactions = allPayments.Count();
+
+            // Get review statistics
+            var totalReviews = await _reviewRepository.GetTotalReviewCountAsync();
+            var averageRating = await _reviewRepository.GetAverageRatingAsync();
+            var ratingCounts = await _reviewRepository.GetReviewCountByRatingAsync();
 
             return new DashboardStatisticsDto
             {
@@ -108,6 +119,16 @@ namespace Snapdi.Services.Services
                 {
                     TodayTransactions = todayTransactions,
                     TotalTransactions = totalTransactions
+                },
+                ReviewStatistics = new ReviewStatisticsDto
+                {
+                    TotalReviews = totalReviews,
+                    AverageRating = Math.Round(averageRating, 2),
+                    FiveStarCount = ratingCounts.GetValueOrDefault(5, 0),
+                    FourStarCount = ratingCounts.GetValueOrDefault(4, 0),
+                    ThreeStarCount = ratingCounts.GetValueOrDefault(3, 0),
+                    TwoStarCount = ratingCounts.GetValueOrDefault(2, 0),
+                    OneStarCount = ratingCounts.GetValueOrDefault(1, 0)
                 }
             };
         }
