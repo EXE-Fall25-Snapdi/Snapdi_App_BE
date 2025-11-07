@@ -229,9 +229,8 @@ public partial class SnapdiDbV2Context : DbContext
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Review__BookingI__59063A47");
 
-            entity.HasOne(d => d.FromUser).WithMany(p => p.ReviewFromUsers).HasConstraintName("FK__Review__FromUser__59FA5E80");
-
-            entity.HasOne(d => d.ToUser).WithMany(p => p.ReviewToUsers).HasConstraintName("FK__Review__ToUserID__5AEE82B9");
+            entity.HasOne(d => d.FromUser).WithMany(p => p.ReviewFromUsers)
+                .HasConstraintName("FK__Review__FromUser__59FA5E80");
         });
 
         modelBuilder.Entity<Role>(entity =>

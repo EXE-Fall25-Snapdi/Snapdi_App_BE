@@ -84,9 +84,6 @@ public partial class User
     [InverseProperty("FromUser")]
     public virtual ICollection<Review> ReviewFromUsers { get; set; } = new List<Review>();
 
-    [InverseProperty("ToUser")]
-    public virtual ICollection<Review> ReviewToUsers { get; set; } = new List<Review>();
-
     [ForeignKey("RoleId")]
     [InverseProperty("Users")]
     public virtual Role? Role { get; set; }

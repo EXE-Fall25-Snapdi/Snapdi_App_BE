@@ -19,9 +19,6 @@ public partial class Review
     [Column("FromUserID")]
     public int? FromUserId { get; set; }
 
-    [Column("ToUserID")]
-    public int? ToUserId { get; set; }
-
     public double Rating { get; set; }
 
     public string? Comment { get; set; }
@@ -36,8 +33,4 @@ public partial class Review
     [ForeignKey("FromUserId")]
     [InverseProperty("ReviewFromUsers")]
     public virtual User? FromUser { get; set; }
-
-    [ForeignKey("ToUserId")]
-    [InverseProperty("ReviewToUsers")]
-    public virtual User? ToUser { get; set; }
 }
