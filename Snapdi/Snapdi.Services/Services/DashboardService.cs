@@ -12,15 +12,18 @@ namespace Snapdi.Services.Services
         private readonly IPaymentRepository _paymentRepository;
         private readonly IUserRepository _userRepository;
         private readonly IBookingRepository _bookingRepository;
+        private readonly IReviewRepository _reviewRepository;
 
         public DashboardService(
             IPaymentRepository paymentRepository,
             IUserRepository userRepository,
-            IBookingRepository bookingRepository)
+            IBookingRepository bookingRepository,
+            IReviewRepository reviewRepository)
         {
             _paymentRepository = paymentRepository;
             _userRepository = userRepository;
             _bookingRepository = bookingRepository;
+            _reviewRepository = reviewRepository;
         }
 
         /// <summary>
@@ -65,7 +68,7 @@ namespace Snapdi.Services.Services
         }
 
         /// <summary>
-        /// Get complete dashboard statistics including user counts, revenue, and transactions
+        /// Get complete dashboard statistics including user counts, revenue, transactions, and reviews
         /// </summary>
         public async Task<DashboardStatisticsDto> GetDashboardStatisticsAsync()
         {
@@ -84,7 +87,7 @@ namespace Snapdi.Services.Services
             var todayTransactions = todayPayments.Count();
 
             // Get total revenue and transactions from all time
-            // Use a reasonable start date (e.g., 10 years ago) instead of DateTime.MinValue
+            // Use a reasonable start date (e.g., year 2000) instead of DateTime.MinValue
             // This avoids PostgreSQL/SQL Server DateTime range issues
             var allTimeStartDate = DateTime.SpecifyKind(new DateTime(2000, 1, 1), DateTimeKind.Utc);
             var allTimeEndDate = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddYears(1), DateTimeKind.Utc); // Include future payments
@@ -92,6 +95,11 @@ namespace Snapdi.Services.Services
             var allPayments = await _paymentRepository.GetPaymentsByDateRangeAsync(allTimeStartDate, allTimeEndDate);
             var totalRevenue = allPayments.Sum(p => p.Amount);
             var totalTransactions = allPayments.Count();
+
+            // Get review statistics
+            var totalReviews = await _reviewRepository.GetTotalReviewCountAsync();
+            var averageRating = await _reviewRepository.GetAverageRatingAsync();
+            var ratingCounts = await _reviewRepository.GetReviewCountByRatingAsync();
 
             return new DashboardStatisticsDto
             {
@@ -111,6 +119,16 @@ namespace Snapdi.Services.Services
                 {
                     TodayTransactions = todayTransactions,
                     TotalTransactions = totalTransactions
+                },
+                ReviewStatistics = new ReviewStatisticsDto
+                {
+                    TotalReviews = totalReviews,
+                    AverageRating = Math.Round(averageRating, 2),
+                    FiveStarCount = ratingCounts.GetValueOrDefault(5, 0),
+                    FourStarCount = ratingCounts.GetValueOrDefault(4, 0),
+                    ThreeStarCount = ratingCounts.GetValueOrDefault(3, 0),
+                    TwoStarCount = ratingCounts.GetValueOrDefault(2, 0),
+                    OneStarCount = ratingCounts.GetValueOrDefault(1, 0)
                 }
             };
         }
